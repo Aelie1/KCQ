@@ -1,4 +1,5 @@
 import type { PolicyContext } from "../../harness";
+import { smartEnemyContext } from "../smart-enemies";
 import type { SmartCandidate } from "../smart";
 import { applyBindingEffects, cloneBindingBoard, currentBindingBoard, totalRecoveryDebt } from "../smart-bindings";
 import type { KitKnowledgeRuleDiagnostic } from "./kit-knowledge";
@@ -12,6 +13,7 @@ export function evaluateNaruyoKnowledge(
     context: PolicyContext,
     candidate: SmartCandidate,
 ): KitKnowledgeRuleDiagnostic[] {
+    context = smartEnemyContext(context);
     if (candidate.action.type !== "move" || candidate.action.actor !== "naruyo") return [];
     const move = candidate.action.move;
     if (move === "precisionStab"

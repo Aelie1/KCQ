@@ -5,6 +5,7 @@ import type {
     HitBand,
 } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import { smartEnemyContext } from "../smart-enemies";
 import {
     addBinding,
     cloneBindingBoard,
@@ -80,6 +81,7 @@ export interface SustainedPressureProgressBreakdown {
 export function assessSustainedEnemyPressure(
     context: PolicyContext,
 ): readonly SustainedEnemyPressure[] {
+    context = smartEnemyContext(context);
     const current = currentBindingBoard(context.state.characters);
     const baselineDebt = totalRecoveryDebt(current, context.thresholds);
 
@@ -116,6 +118,7 @@ export function evaluateSustainedPressureProgress(
     candidate: SmartCandidate,
     pressure: readonly SustainedEnemyPressure[] = assessSustainedEnemyPressure(context),
 ): SustainedPressureProgressBreakdown {
+    context = smartEnemyContext(context);
     const enemiesById = new Map(
         context.state.enemies.map((enemy) => [enemy.id, enemy] as const),
     );

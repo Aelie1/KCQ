@@ -1,5 +1,6 @@
 import type { Enemy, EntityId } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import { smartEnemyContext } from "../smart-enemies";
 import { firstKnownBindingApplication, type SmartCandidate } from "../smart";
 import {
     addBinding,
@@ -9,7 +10,7 @@ import {
     totalRecoveryDebt,
 } from "../smart-bindings";
 import type { SmartBoardAssessment, SmartEnemyAssessment } from "../smart-board";
-import { probabilityDamageAtLeast } from "../smart-damage";
+import { damageDistribution } from "../smart-damage";
 import type { KitKnowledgeRuleDiagnostic } from "./kit-knowledge";
 
 export const TEMPO_KNOWLEDGE_WEIGHT = 1;
@@ -63,6 +64,7 @@ export function assessSmartPressure(
     context: PolicyContext,
     board: SmartBoardAssessment,
 ): SmartPressureAssessment {
+    context = smartEnemyContext(context);
     const current = currentBindingBoard(context.state.characters);
     const currentPartyPressure = totalRecoveryDebt(current, context.thresholds);
     const projected = cloneBindingBoard(current);
@@ -107,6 +109,7 @@ export function evaluateTempoKnowledge(
     candidate: SmartCandidate,
     pressure: SmartPressureAssessment = assessSmartPressure(context, board),
 ): TempoKnowledgeBreakdown {
+    context = smartEnemyContext(context);
     const rules: KitKnowledgeRuleDiagnostic[] = [];
     const recoveryGain = candidateRecoveryGain(context, candidate, pressure.currentPartyPressure);
     const partyNeed = scaleAboveQuiet(
@@ -203,7 +206,7 @@ export function evaluateTempoKnowledge(
         }
     }
 
-    rules.push(...queenAddClearRules(context, candidate));
+    rules.push(...queenAddClearRules(context, candidate, queenPush.thresholdCrossings));
 
     return {
         pressure,
@@ -229,6 +232,7 @@ interface QueenAddClearDetails {
 function queenAddClearRules(
     context: PolicyContext,
     candidate: SmartCandidate,
+    thresholdCrossings: readonly QueenThresholdCrossing[],
 ): KitKnowledgeRuleDiagnostic[] {
     const livingEnemies = context.state.enemies.filter(({ currHp }) => currHp > 0);
     const rules: KitKnowledgeRuleDiagnostic[] = [];
@@ -243,11 +247,10 @@ function queenAddClearRules(
         const remainingReinforcementThresholds = QUEEN_REINFORCEMENT_RATIOS
             .map((ratio) => queen.maxHp * ratio)
             .filter((threshold) => queen.currHp > threshold);
-        const thresholdCrossingProbabilities = queenThresholdCrossings(
-            context,
-            candidate,
-            queen,
-        );
+        // Nonlethal crossings were already calculated for phase-push valuation.
+        const thresholdCrossingProbabilities = expectedDamage >= queen.currHp
+            ? queenThresholdCrossings(context, candidate, queen)
+            : thresholdCrossings.filter(({ queenId }) => queenId === queen.id);
         const crossedReinforcementThresholds = thresholdCrossingProbabilities
             .filter(({ probability }) => probability > 0)
             .map(({ threshold }) => threshold);
@@ -390,23 +393,26 @@ function queenThresholdCrossings(
     queen: Enemy,
 ): QueenThresholdCrossing[] {
     const deterministicDamageOffset = reflectedQueenDamage(context, candidate, queen.id);
-    return QUEEN_REINFORCEMENT_RATIOS
+    const thresholds = QUEEN_REINFORCEMENT_RATIOS
         .map((ratio) => queen.maxHp * ratio)
-        .filter((threshold) => queen.currHp > threshold)
-        .map((threshold) => {
-            const requiredDamage = queen.currHp - threshold;
-            return {
-                queenId: queen.id,
-                threshold,
-                requiredDamage,
-                deterministicDamageOffset,
-                probability: probabilityDamageAtLeast(
-                    candidate,
-                    queen.id,
-                    requiredDamage - deterministicDamageOffset,
-                ),
-            };
-        });
+        .filter((threshold) => queen.currHp > threshold);
+    if (thresholds.length === 0) return [];
+    // Convolution is the expensive step. All thresholds share one distribution.
+    const distribution = damageDistribution(candidate, queen.id);
+    return thresholds.map((threshold) => {
+        const requiredDamage = queen.currHp - threshold;
+        const requiredDirectDamage = requiredDamage - deterministicDamageOffset;
+        return {
+            queenId: queen.id,
+            threshold,
+            requiredDamage,
+            deterministicDamageOffset,
+            probability: requiredDirectDamage <= 0 ? 1 : clamp(distribution.reduce(
+                (total, outcome) => total + (outcome.damage >= requiredDirectDamage ? outcome.probability : 0),
+                0,
+            ), 0, 1),
+        };
+    });
 }
 
 function reflectedQueenDamage(

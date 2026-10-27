@@ -1,5 +1,6 @@
 import type { BindingId, EntityId } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import { smartEnemyContext } from "../smart-enemies";
 import type { SmartCandidate } from "../smart";
 import {
     addBinding,
@@ -38,6 +39,7 @@ export function evaluateReactiveKnowledge(
     context: PolicyContext,
     candidate: SmartCandidate,
 ): ReactiveKnowledgeBreakdown {
+    context = smartEnemyContext(context);
     const empty: ReactiveKnowledgeBreakdown = {
         normalDebt: 0,
         reflectedDebt: 0,

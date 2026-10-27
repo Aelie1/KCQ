@@ -7,6 +7,7 @@ import type {
     Intention,
 } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import { smartEnemyContext } from "../smart-enemies";
 import type { SmartCandidate } from "../smart";
 import {
     addBinding,
@@ -87,6 +88,7 @@ export function evaluateIntentionKnowledge(
     context: PolicyContext,
     candidate: SmartCandidate,
 ): KitKnowledgeRuleDiagnostic[] {
+    context = smartEnemyContext(context);
     if (candidate.action.type !== "move") return [];
     if (candidate.action.actor === HINARI && candidate.action.move === BRACE) {
         return [braceRule(context)];
@@ -396,6 +398,7 @@ export function firstKnownBindingApplication(
     context: PolicyContext,
     targetId: EntityId,
 ): KnownBindingApplication | undefined {
+    context = smartEnemyContext(context);
     for (const enemy of context.state.enemies) {
         if (enemy.currHp <= 0) continue;
         for (const intention of enemy.intentions) {

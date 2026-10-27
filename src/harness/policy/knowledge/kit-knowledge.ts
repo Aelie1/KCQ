@@ -6,6 +6,7 @@ import type {
     EntityId,
 } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import { smartEnemyContext } from "../smart-enemies";
 import type { SmartCandidate } from "../smart";
 import type { SmartBoardAssessment } from "../smart-board";
 import { evaluateIntentionKnowledge } from "./intention-knowledge";
@@ -62,6 +63,7 @@ export function evaluateKitKnowledge(
     board: SmartBoardAssessment,
     candidate: SmartCandidate,
 ): KitKnowledgeBreakdown {
+    context = smartEnemyContext(context);
     const rules = [
         ...evaluateMatsukoKnowledge(context, board, candidate),
         ...evaluateHinariKnowledge(context, candidate),

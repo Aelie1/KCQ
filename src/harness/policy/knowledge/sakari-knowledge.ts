@@ -1,5 +1,6 @@
 import type { Enemy } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import { dormantEnemyIds, physicalEnemies, smartEnemyContext } from "../smart-enemies";
 import type { SmartCandidate } from "../smart";
 import type { KitKnowledgeRuleDiagnostic } from "./kit-knowledge";
 import {
@@ -16,6 +17,7 @@ export function evaluateSakariKnowledge(
     context: PolicyContext,
     candidate: SmartCandidate,
 ): KitKnowledgeRuleDiagnostic[] {
+    context = smartEnemyContext(context);
     if (candidate.action.type !== "move" || candidate.action.actor !== "sakari") return [];
     const move = candidate.action.move;
     const rules: KitKnowledgeRuleDiagnostic[] = [];
@@ -38,7 +40,9 @@ function discordRule(context: PolicyContext, candidate: SmartCandidate): KitKnow
     const effects = candidateEffects(candidate).filter((effect) =>
         effect.type === "intention" && effect.operation === "discord");
     const living = context.state.enemies.filter(({ currHp }) => currHp > 0);
-    const eligible = (enemy: Enemy, move: string) => living.length >= 2 && effects.some((effect) =>
+    const dormantIds = dormantEnemyIds(context);
+    const physical = physicalEnemies(context).filter(({ id, currHp }) => currHp > 0 || dormantIds.has(id));
+    const eligible = (enemy: Enemy, move: string) => physical.length >= 2 && effects.some((effect) =>
         effect.target === enemy.id && effect.move === move)
         && context.library.moves[move]?.traits?.length === 1
         && context.library.moves[move]?.traits?.[0] === "binding";
@@ -46,15 +50,17 @@ function discordRule(context: PolicyContext, candidate: SmartCandidate): KitKnow
         eligible(enemy, intention.move) ? 1 : 0);
     const conversions = living.map((enemy) => {
         // The preview gives exact converted binding damage. Destinations are random;
-        // average capped damage across other living enemies without drawing RNG.
+        // dormant destinations receive zero value but retain their physical share
+        // of the random draw. Filtering the denominator would overvalue redirects.
         const damage = effects.reduce((sum, effect) => sum + (effect.target === enemy.id
             && eligible(enemy, effect.move)
             && enemy.intentions.some((intention) => !intention.resolved && intention.move === effect.move)
             ? Math.max(0, effect.amount) : 0), 0);
         const others = living.filter(({ id }) => id !== enemy.id);
+        const destinationCount = physical.filter(({ id }) => id !== enemy.id).length;
         return { enemyId: enemy.id, damage,
-            expectedDamage: others.length === 0 ? 0 : others.reduce((sum, target) =>
-                sum + Math.min(target.currHp, damage), 0) / others.length };
+            expectedDamage: destinationCount === 0 ? 0 : others.reduce((sum, target) =>
+                sum + Math.min(target.currHp, damage), 0) / destinationCount };
     });
     const expectedDamage = Math.min(living.reduce((sum, enemy) => sum + enemy.currHp, 0),
         conversions.reduce((sum, conversion) => sum + conversion.expectedDamage, 0));
@@ -137,7 +143,8 @@ function overconfidenceRule(context: PolicyContext, candidate: SmartCandidate): 
                 for (const info of view.moves) {
                     if (!info.available) continue;
                     for (const target of info.targets) {
-                        if (!target.valid || target.accuracy === undefined) continue;
+                        if (!target.valid || target.accuracy === undefined
+                            || !context.state.enemies.some(({ id }) => id === target.target)) continue;
                         const headroom = ((target.accuracy.miss ?? 0) + (target.accuracy.graze ?? 0)) / 100;
                         const damage = previewDamage(target, info.move.hits ?? 1);
                         offenseBenefit = Math.max(offenseBenefit, damage * Math.min(0.3, headroom));

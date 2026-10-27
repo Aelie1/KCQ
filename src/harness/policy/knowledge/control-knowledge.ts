@@ -1,5 +1,6 @@
 import type { Buff, EntityId, ModifierSet } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import { smartEnemyContext } from "../smart-enemies";
 import type { SmartCandidate } from "../smart";
 import type { KitKnowledgeRuleDiagnostic } from "./kit-knowledge";
 import type { SmartPressureAssessment } from "./tempo-knowledge";
@@ -44,6 +45,7 @@ export function evaluateControlKnowledge(
     candidate: SmartCandidate,
     pressure: SmartPressureAssessment,
 ): ControlKnowledgeBreakdown {
+    context = smartEnemyContext(context);
     if (candidate.action.type !== "move"
         || !((candidate.action.actor === KO && STARLIGHT_IDS.has(candidate.action.move))
             || (candidate.action.actor === HINARI && candidate.action.move === RELEASE))) {

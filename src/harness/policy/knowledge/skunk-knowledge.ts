@@ -8,6 +8,7 @@ import type {
     ValidTarget,
 } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import { smartEnemyContext } from "../smart-enemies";
 import type { SmartCandidate } from "../smart";
 import {
     addBinding,
@@ -128,6 +129,7 @@ export interface PounceRelationship {
 
 /** Reads the linked public Pounce buffs and the source-side hit modifier. */
 export function detectPounceRelationships(context: PolicyContext): PounceRelationship[] {
+    context = smartEnemyContext(context);
     const relationships: PounceRelationship[] = [];
     for (const character of context.state.characters) {
         for (const buff of character.buffs) {
@@ -151,6 +153,7 @@ export function evaluateSkunkKnowledge(
     context: PolicyContext,
     candidate: SmartCandidate,
 ): KitKnowledgeRuleDiagnostic[] {
+    context = smartEnemyContext(context);
     const rules: KitKnowledgeRuleDiagnostic[] = [
         //...evaluateRegenerationLiabilityRules(context, candidate),
         //...evaluateFuturePuddleRules(context, candidate),
@@ -225,6 +228,7 @@ export function evaluateSkunkRegenerationLiability(
     context: PolicyContext,
     candidate: SmartCandidate,
 ): SkunkRegenerationKnowledgeBreakdown {
+    context = smartEnemyContext(context);
     const livingSkunks = context.state.enemies.filter((enemy) =>
         enemy.currHp > 0 && isSkunk(enemy.id)
     );
@@ -307,6 +311,7 @@ export function evaluateFuturePuddlePressure(
     context: PolicyContext,
     candidate: SmartCandidate,
 ): FuturePuddlePressureBreakdown {
+    context = smartEnemyContext(context);
     const puddleAmount = Math.max(
         0,
         context.state.traps.find(({ id }) => id === TRAP_PUDDLE)?.amount ?? 0,

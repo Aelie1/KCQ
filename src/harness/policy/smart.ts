@@ -18,6 +18,7 @@ import type {
     ValidTarget,
 } from "../../engine/public/types";
 import type { FightPolicy, PolicyContext } from "../harness";
+import { dormantEnemyIds, smartEnemyContext } from "./smart-enemies";
 import {
     CONTROL_KNOWLEDGE_WEIGHT,
     evaluateControlKnowledge as evaluateControlKnowledgeRules,
@@ -378,9 +379,11 @@ export const kitKnowledgeScorer: SmartScorer = {
     id: "kitKnowledge",
     weight: KIT_KNOWLEDGE_WEIGHT,
     prepare(context, board) {
+        context = smartEnemyContext(context);
         return (candidate) => evaluateKitKnowledgeRules(context, board, candidate).raw;
     },
     prepareDetailed(context, board) {
+        context = smartEnemyContext(context);
         return (candidate) => {
             const diagnostics = evaluateKitKnowledgeRules(context, board, candidate);
             return { raw: diagnostics.raw, diagnostics };
@@ -393,10 +396,12 @@ export const tempoKnowledgeScorer: SmartScorer = {
     id: "tempoKnowledge",
     weight: TEMPO_KNOWLEDGE_WEIGHT,
     prepare(context, board) {
+        context = smartEnemyContext(context);
         const pressure = assessSmartPressure(context, board);
         return (candidate) => evaluateTempoKnowledgeRules(context, board, candidate, pressure).raw;
     },
     prepareDetailed(context, board) {
+        context = smartEnemyContext(context);
         const pressure = assessSmartPressure(context, board);
         return (candidate) => {
             const diagnostics = evaluateTempoKnowledgeRules(context, board, candidate, pressure);
@@ -410,10 +415,12 @@ export const controlKnowledgeScorer: SmartScorer = {
     id: "controlKnowledge",
     weight: CONTROL_KNOWLEDGE_WEIGHT,
     prepare(context, board) {
+        context = smartEnemyContext(context);
         const pressure = assessSmartPressure(context, board);
         return (candidate) => evaluateControlKnowledgeRules(context, candidate, pressure).raw;
     },
     prepareDetailed(context, board) {
+        context = smartEnemyContext(context);
         const pressure = assessSmartPressure(context, board);
         return (candidate) => {
             const diagnostics = evaluateControlKnowledgeRules(context, candidate, pressure);
@@ -427,9 +434,11 @@ export const reactiveKnowledgeScorer: SmartScorer = {
     id: "reactiveKnowledge",
     weight: REACTIVE_KNOWLEDGE_WEIGHT,
     prepare(context) {
+        context = smartEnemyContext(context);
         return (candidate) => evaluateReactiveKnowledgeRules(context, candidate).raw;
     },
     prepareDetailed(context) {
+        context = smartEnemyContext(context);
         return (candidate) => {
             const diagnostics = evaluateReactiveKnowledgeRules(context, candidate);
             return { raw: diagnostics.raw, diagnostics };
@@ -503,11 +512,13 @@ export const sustainedPressureProgressScorer: SmartScorer = {
     id: "sustainedPressureProgress",
     weight: SUSTAINED_PRESSURE_PROGRESS_WEIGHT,
     prepare(context) {
+        context = smartEnemyContext(context);
         const pressure = assessSustainedEnemyPressure(context);
         return (candidate) =>
             evaluateSustainedPressureProgressRules(context, candidate, pressure).raw;
     },
     prepareDetailed(context) {
+        context = smartEnemyContext(context);
         const pressure = assessSustainedEnemyPressure(context);
         return (candidate) => {
             const diagnostics = evaluateSustainedPressureProgressRules(
@@ -703,6 +714,7 @@ export function evaluateReactiveKnowledge(
 function prepareExpectedEnemyDamage(
     context: PolicyContext,
 ): (candidate: SmartCandidate) => number {
+    context = smartEnemyContext(context);
     const enemyIds = new Set(context.state.enemies.map((enemy) => enemy.id));
     return (candidate) => expectedEnemyDamage(candidate, enemyIds);
 }
@@ -710,6 +722,7 @@ function prepareExpectedEnemyDamage(
 function prepareLinkedThreat(
     context: PolicyContext,
 ): (candidate: SmartCandidate) => LinkedThreatBreakdown {
+    context = smartEnemyContext(context);
     const livingEnemies = new Map(
         context.state.enemies
             .filter(({ currHp }) => currHp > 0)
@@ -785,6 +798,7 @@ function prepareLinkedThreat(
 function prepareSkunkedRescue(
     context: PolicyContext,
 ): (candidate: SmartCandidate) => SkunkedRescueBreakdown {
+    context = smartEnemyContext(context);
     const current = currentBindingBoard(context.state.characters);
     const actionById = new Map(context.actions.map((action) => [action.id, action] as const));
     const relationships = context.state.characters.flatMap((character) => {
@@ -929,6 +943,7 @@ function prepareStanceTrap(
     context: PolicyContext,
     board: SmartBoardAssessment,
 ): (candidate: SmartCandidate) => StanceTrapBreakdown {
+    context = smartEnemyContext(context);
     const current = currentBindingBoard(context.state.characters);
     const prepared = new Map<EntityId, PreparedStanceActor>();
     for (const actionView of context.actions) {
@@ -1303,6 +1318,7 @@ function prepareIncomingThreat(
     context: PolicyContext,
     board: SmartBoardAssessment,
 ): (candidate: SmartCandidate) => IncomingThreatBreakdown {
+    context = smartEnemyContext(context);
     const current = currentBindingBoard(context.state.characters);
     const baselineDebt = totalRecoveryDebt(current, context.thresholds);
     const assessmentsById = new Map(board.enemies.map((enemy) => [enemy.id, enemy] as const));
@@ -1400,6 +1416,7 @@ function modifierSeverity(modifiers: Buff["modifiers"]): number {
 function prepareFinisherPressure(
     context: PolicyContext,
 ): (candidate: SmartCandidate) => number {
+    context = smartEnemyContext(context);
     const livingEnemies = context.state.enemies.filter(({ currHp }) => currHp > 0);
     return (candidate) => finisherPressure(candidate, livingEnemies);
 }
@@ -1407,6 +1424,7 @@ function prepareFinisherPressure(
 function prepareReserveSpending(
     context: PolicyContext,
 ): (candidate: SmartCandidate) => ReserveSpendingBreakdown {
+    context = smartEnemyContext(context);
     const evaluateFutureOptions = prepareFutureMoveOptions(context);
     const evaluateExpectedDamage = prepareExpectedEnemyDamage(context);
     const evaluateFinisherPressure = prepareFinisherPressure(context);
@@ -1445,14 +1463,16 @@ function prepareReserveSpending(
 
 /** Enumerates legal primary actions in stable public action-view order. */
 export function generateSmartCandidates(context: PolicyContext): SmartCandidate[] {
+    context = smartEnemyContext(context);
     const candidates: SmartCandidate[] = [];
+    const excludedTargets = dormantEnemyIds(context);
 
     for (const actionView of context.actions) {
         if (!actionView.available) continue;
 
         for (const info of actionView.moves) {
             if (!info.available) continue;
-            candidates.push(...moveCandidates(actionView.id, info));
+            candidates.push(...moveCandidates(actionView.id, info, excludedTargets));
         }
 
         for (const escape of actionView.escapes) {
@@ -1486,6 +1506,7 @@ export function evaluateSmartDecision(
     scorers: readonly SmartScorer[] = smartScorers,
     options: SmartDecisionOptions = {},
 ): SmartDecision {
+    context = smartEnemyContext(context);
     assertUniqueScorerIds(scorers);
     const board = assessSmartBoard(context);
 
@@ -1985,7 +2006,11 @@ function assertUniqueScorerIds(scorers: readonly SmartScorer[]): void {
     }
 }
 
-function moveCandidates(actor: string, info: ActionInfo): SmartCandidate[] {
+function moveCandidates(
+    actor: string,
+    info: ActionInfo,
+    excludedTargets: ReadonlySet<EntityId>,
+): SmartCandidate[] {
     const validTargets = uniqueValidTargets(info.targets);
     const targetCount = info.move.targets;
     const hits = info.move.hits ?? 1;
@@ -1999,7 +2024,8 @@ function moveCandidates(actor: string, info: ActionInfo): SmartCandidate[] {
     }
 
     const selectableTargets = validTargets.filter(
-        (target): target is ValidTarget & { target: string } => target.target !== null,
+        (target): target is ValidTarget & { target: string } =>
+            target.target !== null && !excludedTargets.has(target.target),
     );
     return combinations(selectableTargets, targetCount).map((targets) =>
         moveCandidate(

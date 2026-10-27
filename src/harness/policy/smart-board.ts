@@ -11,6 +11,7 @@ import type {
     MoveType,
 } from "../../engine/public/types";
 import type { PolicyContext } from "../harness";
+import { smartEnemyContext } from "./smart-enemies";
 import {
     assessPeriodicBindingPressureSources,
     type SmartBindingPressureSource,
@@ -136,6 +137,7 @@ const BINDING_LEVEL_ORDINAL = new Map(
 export function assessSmartBoard(
     context: Pick<PolicyContext, "state" | "actions" | "thresholds">,
 ): SmartBoardAssessment {
+    context = smartEnemyContext(context);
     const actionByCharacter = new Map(context.actions.map((action) => [action.id, action]));
     const enemies = context.state.enemies.map((enemy) => assessEnemy(enemy, context.state));
     const incomingByCharacter = aggregateIncomingByCharacter(

@@ -1,5 +1,6 @@
 import type { Buff, Effect, Enemy, Intention, ValidTarget } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import { smartEnemyContext } from "../smart-enemies";
 import type { SmartCandidate } from "../smart";
 import { addBinding, cloneBindingBoard, currentBindingBoard, totalRecoveryDebt } from "../smart-bindings";
 import { TRAP_PRESSURE_SCALE } from "./tempo-knowledge";
@@ -22,6 +23,7 @@ export function mitigatedPressure(
     fraction: (enemy: Enemy, intention: Intention) => number,
     includeEffect: (effect: Effect) => boolean = () => true,
 ): number {
+    context = smartEnemyContext(context);
     const baseline = currentBindingBoard(context.state.characters);
     const mitigated = cloneBindingBoard(baseline);
     let preventedTraps = 0;
@@ -61,6 +63,8 @@ export function incrementalDuration(buff: Buff, existing: readonly Buff[]): numb
 
 /** Estimate public follow-up offense, excluding the actor's already-spent action. */
 export function followUpDamage(context: PolicyContext, actorId: string, enemyId: string): number {
+    context = smartEnemyContext(context);
+    if (!context.state.enemies.some(({ id }) => id === enemyId)) return 0;
     let total = 0;
     for (const view of context.actions) {
         const character = context.state.characters.find(({ id }) => id === view.id);
