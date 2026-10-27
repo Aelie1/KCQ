@@ -15,8 +15,8 @@ const GUN_DAMAGE = 35;
 
 const COLLAR_DAMAGE = 50;
 
-const PERFUME_DURATION = 4;
-const PERFUME_HEAL_MODIFIER = 3;
+const PERFUME_DURATION = 3;
+const PERFUME_HEAL_MODIFIER = 1;
 const DEFENSE_BUFF = "defensePerfume";
 const ESCAPE_BUFF = "escapePerfume";
 const REGEN_BUFF = "regenPerfume";
@@ -223,9 +223,9 @@ export const healingPerfume: MoveDef = {
         const regenBuff: iBuff = {
             id: REGEN_BUFF,
             icon: "regen",
-            active: true,
+            active: false,
             modifiers: { regeneration: PERFUME_HEAL_MODIFIER },
-            duration: Math.ceil(PERFUME_DURATION / 2),
+            duration: PERFUME_DURATION,
         }
         for (const target of targets) {
             result.targets.push(tr(target, [{

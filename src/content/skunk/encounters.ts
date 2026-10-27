@@ -52,7 +52,6 @@ interface TowerSetup {
     enemyMod: number;
     queenWave: number;
     collarAmount: number;
-    regenAmount: number;
     playerMod: number;
     playerAmbushed: boolean;
     enemyAmbushed: boolean;
@@ -63,7 +62,6 @@ const setupTower_1: TowerSetup = {
     enemyMod: 8,
     queenWave: 4,
     collarAmount: 50,
-    regenAmount: 5,
     playerMod: 0,
     playerAmbushed: true,
     enemyAmbushed: false,
@@ -74,7 +72,6 @@ const setupTower_2: TowerSetup = {
     enemyMod: 4,
     queenWave: 4,
     collarAmount: 30,
-    regenAmount: 3,
     playerMod: 1,
     playerAmbushed: false,
     enemyAmbushed: false,
@@ -85,7 +82,6 @@ const setupTower_3: TowerSetup = {
     enemyMod: 2,
     queenWave: 4,
     collarAmount: 10,
-    regenAmount: 1,
     playerMod: 2,
     playerAmbushed: false,
     enemyAmbushed: true,
@@ -96,7 +92,6 @@ const setupOutside: TowerSetup = {
     enemyMod: 8,
     queenWave: 6,
     collarAmount: 0,
-    regenAmount: 1,
     playerMod: 0,
     playerAmbushed: false,
     enemyAmbushed: false,
@@ -166,7 +161,7 @@ function towerBuffs(state: iGameState, setup: TowerSetup): iEffect[] {
                 }
             });
         }
-        if (setup.regenAmount > 0 && enemy.definition.rank === "elite") {
+        if (enemy.definition.rank === "elite") {
             effects.push({
                 type: "buff",
                 operation: "add",
@@ -175,7 +170,7 @@ function towerBuffs(state: iGameState, setup: TowerSetup): iEffect[] {
                     id: COLLAR_BUFF,
                     icon: "regen",
                     active: true,
-                    modifiers: { regeneration: setup.regenAmount },
+                    modifiers: { regeneration: 1 },
                     callback: eliteCallback
                 }
             });
@@ -227,16 +222,17 @@ function libraryTowerBuffs(setup: TowerSetup): Effect[] {
                 modifiers: { hit: setup.enemyMod }
             }
         });
-        effects.push({
-            type: "buff",
-            operation: "add",
-            target: "elites",
-            buff: {
-                id: COLLAR_BUFF,
-                modifiers: { regeneration: setup.regenAmount }
-            }
-        });
     }
+
+    effects.push({
+        type: "buff",
+        operation: "add",
+        target: "elites",
+        buff: {
+            id: COLLAR_BUFF,
+            modifiers: { regeneration: 1 }
+        }
+    });
 
     if (setup.enemyAmbushed) {
         effects.push(enemyAmbushSetup);
