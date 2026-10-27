@@ -1,5 +1,69 @@
 # Ko-chan's Quest Patch Notes
 
+## 1.2.0 — 2026-10-27
+
+### Elite Enemies
+
+Introduced **Elite enemies**, a new class of opponent with special survival mechanics.
+
+* Added the **Skunk Empress** and **Skunkette Queen** as Elite enemies in the Tower encounters and Goddess's Resurgence.
+* Elites have increased HP and Defense compared to their ordinary counterparts.
+* Added special regenerative collars that continuously restore Elite HP.
+* When an Elite reaches 0 HP, it enters **Dormancy** instead of being defeated.
+  * Dormant enemies cannot take actions.
+  * They continue regenerating and can return to combat once fully healed.
+  * Damage dealt while dormant can delay their recovery.
+* Defeating the controlling Skunk Queen disables the Elites' regenerative collars and defeats any Elites still dormant.
+* Direct defeat abilities, including Ko-chan's **Power of Denial**, now trigger Elite dormancy instead of bypassing it.
+* The Skunk Empress can enter dormancy after using **Latex Explosion**, allowing her to eventually return to combat.
+
+### Enemy Abilities and Balance
+
+* Added **Regeneration** as a combat modifier that restores enemy HP each round.
+* Added regeneration information to the Game Guide and Library.
+* The Skunk Queen's **Skunk Perfume** now has separate offensive and healing abilities:
+  * **Skunk Perfume** weakens characters' Defense or Escape.
+  * **Healing Perfume** grants regenerative healing to allied enemies.
+* Healing Perfume now restores 10 HP per round for three rounds, with its first healing tick delayed.
+* Standardized Elite collar regeneration across Tower encounters.
+* Adjusted Skunk Perfume accuracy and cooldown interactions.
+* Updated Fairy healing to support Elite enemies.
+* Updated enemy descriptions, special rules, and combat narration to explain the new mechanics.
+
+### Battle Interface
+
+* Added visual distinctions for enemy ranks.
+  * **Elite enemies** receive a subtle golden glow.
+  * **Bosses** receive a stronger pink glow and additional card highlighting.
+* Added a special collar icon to represent Elite regeneration.
+* Enemy HP bars now display incoming regeneration and healing, helping players see how much HP an enemy is expected to recover.
+* Improved the presentation of enemy buffs and permanent effects.
+* Added difficulty bonus indicators to battle headers, with icons and descriptions explaining the active difficulty modifiers.
+* Improved action availability displays by hiding commands that cannot currently be used in certain restricted states.
+* Standardized modifier pip meters:
+  * Positive values fill from the left.
+  * Negative values fill from the right.
+* Additional improvements to combat icons, spacing, and visual feedback.
+
+### Library Improvements
+
+* Reorganized the Library's move navigation into expandable groups organized by character or enemy.
+* Improved move browsing and navigation in medium and wide layouts.
+* Updated enemy presentation and ordering.
+* Improved move-effect previews to distinguish beneficial buffs from harmful debuffs.
+* Updated Healing Perfume and Skunk Perfume descriptions to match their current behavior.
+* Willpower-based abilities now display **Base Willpower** rather than Base Accuracy.
+* Added information about Regeneration to the Game Guide.
+* Improved descriptions of Elite enemies and their special mechanics.
+
+### Combat and Game Log Fixes
+
+* Improved the ordering and grouping of trap effects in the Combat Log and Story Log.
+* Trap consequences are now presented together with the trap that caused them.
+* Corrected cases where overlapping combat effects could produce confusing log output.
+* Improved narration for multiple targets and certain special enemy abilities.
+* Refined enemy defeat handling so effects that prevent defeat behave consistently across damage, special abilities, and scripted defeat effects.
+* Additional fixes to action availability, effect previews, and combat event reporting.
 
 ## 1.1.0 — 2026-10-26
 

@@ -1047,6 +1047,7 @@ button {
     flex-basis: 14px;
     width: 14px;
     height: 14px;
+    transform: translateY(1px);
 }
 
 .kcq-enemy-card__permanent-effect>span {

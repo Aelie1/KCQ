@@ -26,6 +26,7 @@ export const GUIDE_REFERENCES: Readonly<Record<string, LibraryPage>> = {
     Potency: guide("modifiers", "potency"),
     Willpower: guide("modifiers", "willpower"),
     Spread: guide("modifiers", "spread"),
+    Regeneration: guide("modifiers", "regeneration"),
     Traps: { kind: "category", category: "traps" },
     Vibrating: { kind: "entry", category: "statuses", id: "vibrating" },
     Immobilized: { kind: "entry", category: "statuses", id: "immobilized" },
