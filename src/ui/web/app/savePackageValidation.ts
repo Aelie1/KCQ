@@ -24,7 +24,7 @@ const band = oneOf("none", "miss", "graze", "hit", "crit");
 const level = oneOf("none", "light", "moderate", "heavy", "severe", "overwhelming", "max");
 const trap = shape({ id: text, amount: number });
 const buffFields = {
-    id: text, icon: optional(oneOf("shield", "sword", "shield-off", "sword-off", "crown", "sun", "ambush", "sprayer", "regen", "dormant")),
+    id: text, icon: optional(oneOf("shield", "sword", "shield-off", "sword-off", "crown", "sun", "ambush", "sprayer", "regen", "dormant", "tutu", "collar")),
     severity: optional(number), duration: optional(number), linkedEntity: optional(text),
     statuses: optional(list(shape({ id: text, value: number }))), modifiers: optional(record(number)),
     moveList: optional(shape({ addedMoves: optional(list(text)), blockedMoves: optional(list(text)) })),

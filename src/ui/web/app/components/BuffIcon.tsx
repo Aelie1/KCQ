@@ -64,6 +64,15 @@ export function BuffIcon(props: { icon: NonNullable<Buff["icon"]> }): JSX.Elemen
                     <path d="M6.75 5 10 3 12 4.5 14 3 17.25 5 15.5 11.5h-7L6.75 5Z" />
                     <path d="M8.5 11.5Q4.75 11.5 2.5 15.5l2 1.25 2 1.25 2.75-.75L12 18.5l2.75-1.25 2.75.75 2-1.25 2-1.25q-2.25-4-6-4" />
                 </Match>
+                <Match when={props.icon === "collar"}>
+                    <path d="M3 7Q12 3.5 21 7v7Q12 18.5 3 14V7Z" />
+                    <path d="M3 8.5q9 4 18 0" />
+                    <g class="kcq-buff-icon__collar-tag">
+                        <circle cx="12" cy="14.75" r="3.1" />
+                        <circle cx="12" cy="14.75" r=".65" />
+                        <path d="M12 15.4v2.1" />
+                    </g>
+                </Match>
             </Switch>
         </svg>
     );

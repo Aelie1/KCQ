@@ -168,7 +168,7 @@ function towerBuffs(state: iGameState, setup: TowerSetup): iEffect[] {
                 target: enemy,
                 buff: {
                     id: COLLAR_BUFF,
-                    icon: "regen",
+                    icon: "collar",
                     active: true,
                     modifiers: { regeneration: 1 },
                     callback: eliteCallback

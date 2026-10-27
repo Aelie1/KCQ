@@ -79,7 +79,7 @@ export type SectionId = string;
 
 export type CallbackId = string;
 
-export type IconId = "shield" | "sword" | "shield-off" | "sword-off" | "crown" | "sun" | "ambush" | "sprayer" | "regen" | "dormant" | "tutu";
+export type IconId = "shield" | "sword" | "shield-off" | "sword-off" | "crown" | "sun" | "ambush" | "sprayer" | "regen" | "dormant" | "tutu" | "collar";
 
 
 /*******************************************************

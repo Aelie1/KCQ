@@ -1038,8 +1038,15 @@ button {
     color: var(--kcq-effect-sun);
 }
 
-.kcq-enemy-card__permanent-effect:has([data-icon="regen"]) {
-    color: var(--kcq-state-success);
+.kcq-buff-icon__collar-tag {
+    stroke: var(--kcq-effect-crown);
+}
+
+.kcq-enemy-card__permanent-effect:has([data-icon="collar"]) .kcq-duration-pips__icon {
+    color: var(--kcq-effect-collar);
+    flex-basis: 14px;
+    width: 14px;
+    height: 14px;
 }
 
 .kcq-enemy-card__permanent-effect>span {
@@ -1152,7 +1159,7 @@ button {
     margin-left: auto;
 }
 
-.kcq-enemy-card__hp-meter > .kcq-projected-meter {
+.kcq-enemy-card__hp-meter>.kcq-projected-meter {
     --kcq-projected-meter-current: var(--kcq-binding-severe);
     --kcq-projected-meter-radius: 2px;
     height: 100%;
@@ -2909,7 +2916,7 @@ button {
     background: var(--kcq-surface-meter-track);
 }
 
-.kcq-target-header__meter > span:not(.kcq-projected-meter) {
+.kcq-target-header__meter>span:not(.kcq-projected-meter) {
     display: block;
     height: 100%;
     border-radius: 2px;
