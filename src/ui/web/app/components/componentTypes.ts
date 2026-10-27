@@ -2,6 +2,7 @@ import type {
     BindingId,
     BindingLevel,
     Buff,
+    EnemyRank,
     EntityId,
     HitBand,
     Intention,
@@ -63,6 +64,7 @@ export interface EnemyCardData {
     intentions: readonly IntentViewModel[];
     linkedEntities: readonly LinkedEntityViewModel[];
     maxHp: number;
+    rank: EnemyRank;
     name: string;
     overflowAriaLabel?: string;
     overflowCount: number;

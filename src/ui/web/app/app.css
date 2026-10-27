@@ -1271,6 +1271,29 @@ button {
     color: var(--kcq-text-secondary);
 }
 
+
+/* Enemy rank treatments */
+
+
+/* Elite: subtle golden aura */
+.kcq-enemy-card[data-enemy-rank="elite"] .kcq-enemy-card__name {
+    filter:
+        drop-shadow(0 0 6px #d7ad4a75) drop-shadow(0 0 12px #d7ad4a30);
+}
+
+/* Boss: slightly stronger pink aura */
+.kcq-enemy-card[data-enemy-rank="boss"] .kcq-enemy-card__name {
+    filter:
+        drop-shadow(0 0 5px #e777ad99) drop-shadow(0 0 10px #e777ad44);
+}
+
+/* Boss: faint ambient glow around the card */
+.kcq-enemy-card[data-enemy-rank="boss"] {
+    box-shadow: 0 0 10px #e777ad20;
+}
+
+
+
 .kcq-party-card {
     display: flex;
     flex-direction: column;

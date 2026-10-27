@@ -44,6 +44,7 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
                 "--kcq-death-glow-duration": `${ENEMY_DEFEAT_GLOW_DURATION}ms`,
                 "--kcq-death-fade-duration": `${ENEMY_DEFEAT_FADE_DURATION}ms`,
             }}
+            data-enemy-rank={props.enemy.rank}
             aria-label={props.enemy.name}
             role={selectable() ? "button" : undefined}
             tabIndex={selectable() ? 0 : undefined}
@@ -57,6 +58,7 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
             }}
         >
             <Show when={selectable()}><Shortcut shortcut={props.shortcut} /></Show>
+            <span class="kcq-enemy-card__rank-ornaments" aria-hidden="true" />
             <header class="kcq-enemy-card__header">
                 <For each={props.enemy.linkedEntities}>
                     {(link) => <LinkedEntityChip link={link} iconOnly />}

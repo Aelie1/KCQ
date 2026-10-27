@@ -66,6 +66,7 @@ export function createEnemyCardViewModel(
         name: presentation.entity(enemy.id),
         currentHp: enemy.currHp,
         maxHp: enemy.maxHp,
+        rank: enemy.rank,
         // Serialized modifiers already combine active buffs, passives, and difficulty.
         // Pending buff additions/refreshes must not contribute another regeneration tick.
         incomingHealing: Math.min(Math.max(0, enemy.maxHp - enemy.currHp),
