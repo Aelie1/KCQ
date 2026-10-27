@@ -60,6 +60,10 @@ export function BuffIcon(props: { icon: NonNullable<Buff["icon"]> }): JSX.Elemen
                     <path d="M16 8H22L17 14H23" />
                     <path d="M2 14H11L4 22H14" />
                 </Match>
+                <Match when={props.icon === "tutu"}>
+                    <path d="M6.75 5 10 3 12 4.5 14 3 17.25 5 15.5 11.5h-7L6.75 5Z" />
+                    <path d="M8.5 11.5Q4.75 11.5 2.5 15.5l2 1.25 2 1.25 2.75-.75L12 18.5l2.75-1.25 2.75.75 2-1.25 2-1.25q-2.25-4-6-4" />
+                </Match>
             </Switch>
         </svg>
     );

@@ -17,6 +17,8 @@ const COLLAR_DAMAGE = 50;
 
 const PERFUME_DURATION = 3;
 const PERFUME_HEAL_MODIFIER = 1;
+const PERFUME_DEFENSE_MODIFIER = -2;
+const PERFUME_ESCAPE_MODIFIER = -2;
 const DEFENSE_BUFF = "defensePerfume";
 const ESCAPE_BUFF = "escapePerfume";
 const REGEN_BUFF = "regenPerfume";
@@ -154,6 +156,10 @@ export const latexRainmaker: MoveDef = {
 
 export const skunkPerfume: MoveDef = {
     id: "skunkPerfume",
+    libraryEffects: [
+        { id: DEFENSE_BUFF, recipient: "selected", duration: PERFUME_DURATION, modifiers: { defense: PERFUME_DEFENSE_MODIFIER } },
+        { id: ESCAPE_BUFF, recipient: "selected", duration: PERFUME_DURATION, modifiers: { escape: PERFUME_ESCAPE_MODIFIER } }
+    ],
     targetSide: "player",
     targets: "all",
     type: "none",
@@ -173,7 +179,7 @@ export const skunkPerfume: MoveDef = {
                 const defBuff: iBuff = {
                     id: DEFENSE_BUFF,
                     active: false,
-                    modifiers: { defense: -2 },
+                    modifiers: { defense: PERFUME_DEFENSE_MODIFIER },
                     duration: PERFUME_DURATION,
                 }
                 for (const target of targets) {
@@ -191,7 +197,7 @@ export const skunkPerfume: MoveDef = {
                 const escBuff: iBuff = {
                     id: ESCAPE_BUFF,
                     active: false,
-                    modifiers: { escape: -2 },
+                    modifiers: { escape: PERFUME_ESCAPE_MODIFIER },
                     duration: PERFUME_DURATION,
                 }
                 for (const target of targets) {
@@ -213,6 +219,7 @@ export const skunkPerfume: MoveDef = {
 
 export const healingPerfume: MoveDef = {
     id: "healingPerfume",
+    libraryEffects: [{ id: REGEN_BUFF, recipient: "selected", duration: PERFUME_DURATION, modifiers: { regeneration: PERFUME_HEAL_MODIFIER } }],
     targetSide: "enemy",
     targets: 1,
     type: "none",

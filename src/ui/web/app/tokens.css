@@ -70,6 +70,7 @@
 
     --kcq-effect-crown: #e8ba5c;
     --kcq-effect-sun: #a6d9f2;
+    --kcq-effect-tutu: #e2a6f2;
 
     /* Fixed combat feedback, including intentional alpha. Never alias these
        to theme text, surfaces or accents, even when their RGB values match. */

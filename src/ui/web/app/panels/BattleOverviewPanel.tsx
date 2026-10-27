@@ -89,6 +89,13 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                     variant="overview"
                     encounterLabel={model().header.encounterLabel}
                     difficultyLabel={model().header.difficultyLabel}
+                    difficultyTooltip={props.state.difficulty.id === "standard"
+                        ? undefined
+                        : props.state.difficulty.id === "casual"
+                            ? props.presentation.ui("combatHeader.playerBonus")
+                            : props.presentation.ui("combatHeader.enemyBonus", {
+                                amount: props.state.difficulty.id === "mythic" ? 2 : 1,
+                            })} difficultyId={props.state.difficulty.id}
                     roundLabel={model().header.roundLabel}
                     phaseLabel={model().header.phaseLabel}
                     trap={model().header.trap}

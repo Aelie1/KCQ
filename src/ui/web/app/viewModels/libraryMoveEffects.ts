@@ -240,13 +240,6 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
         case "latexRainmaker":
             row("targeting.operationSpawn", "spawn", "field");
             break;
-        case "skunkPerfume":
-            buff({ id: "defensePerfume", recipient: "players", duration: 4, modifiers: { defense: -2 } }, "add", true, text("effect.defense.note"));
-            buff({ id: "escapePerfume", recipient: "players", duration: 4, modifiers: { escape: -2 } }, "add", true, text("effect.escape.note"));
-            break;
-        case "healingPerfume":
-            buff({ id: "regenPerfume", recipient: "enemies", duration: 2, modifiers: { regeneration: 3 } }, "add", false, text("effect.regen.note"));
-            break;
     }
     if (move.id !== "fairyEmpowerment" && Object.values(library.characters).some(character => character.empoweredMoves.includes(move.id))) empowerment("self", "remove");
     if (Object.keys(move.modifiers ?? {}).length) rows.push({ recipient: "", label: p.ui("library.modifiersHeading"), tone: "primary", modifiers: move.modifiers });

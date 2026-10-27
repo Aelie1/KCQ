@@ -1,4 +1,5 @@
 import { Show, type JSX } from "solid-js";
+import { BuffIcon } from "./BuffIcon";
 import { LibrarySettingsControls } from "./LibrarySettingsControls";
 import { Shortcut } from "./Shortcut";
 
@@ -24,6 +25,8 @@ interface CombatHeaderOverviewProps extends CombatHeaderBaseProps {
     };
     action?: JSX.Element;
     difficultyLabel: string;
+    difficultyTooltip?: string;
+    difficultyId: "casual" | "standard" | "veteran" | "extreme" | "mythic";
     onSettings?: () => void;
     settingsLabel: string;
     onLibrary?: () => void;
@@ -107,8 +110,15 @@ export function CombatHeader(props: CombatHeaderProps): JSX.Element {
 
             <div class="kcq-combat-header__metadata">
                 {props.variant === "overview" && (
-                    <p class="kcq-combat-header__difficulty">{props.difficultyLabel}</p>
-                )}
+                    <p class="kcq-combat-header__difficulty" title={props.difficultyTooltip}>
+                        {props.difficultyLabel}
+                        <Show when={props.difficultyId !== "standard"}>
+                            <span class="kcq-combat-header__difficulty-bonus">
+                                <BuffIcon icon={props.difficultyId === "casual" ? "tutu" : "crown"} />
+                                +{props.difficultyId === "casual" || props.difficultyId === "mythic" ? 2 : 1}
+                            </span>
+                        </Show>
+                    </p>)}
                 <p class="kcq-combat-header__round">{props.roundLabel}</p>
                 <p class="kcq-combat-header__phase">{props.phaseLabel}</p>
             </div>

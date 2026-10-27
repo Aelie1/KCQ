@@ -304,7 +304,37 @@ button {
     font-size: 9px;
     font-weight: 600;
     letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
+
+.kcq-combat-header__difficulty-bonus {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    white-space: nowrap;
+}
+
+.kcq-combat-header__difficulty-bonus svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+
+.kcq-combat-header__difficulty-bonus:has([data-icon="tutu"]) {
+    color: var(--kcq-effect-tutu);
+}
+
+.kcq-combat-header__difficulty-bonus:has([data-icon="crown"]) {
+    color: var(--kcq-effect-crown);
+}
+
+.kcq-combat-header__difficulty-bonus .kcq-duration-pips__icon {
+    width: 12px;
+}
+
 
 .kcq-combat-header__round {
     color: var(--kcq-text-primary);
@@ -1018,6 +1048,11 @@ button {
 
 .kcq-enemy-card__permanent-effect .kcq-duration-pips__icon {
     flex: 0 0 10px;
+}
+
+.kcq-enemy-card--expanded .kcq-enemy-card__permanent-effect,
+.kcq-enemy-card--expanded .kcq-enemy-card__permanent-effect .kcq-duration-pips__icon {
+    background: transparent;
 }
 
 .kcq-enemy-card__debuff {

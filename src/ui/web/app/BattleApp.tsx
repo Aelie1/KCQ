@@ -622,6 +622,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 header: <CombatHeader variant="overview"
                     encounterLabel={overview().header.encounterLabel}
                     difficultyLabel={overview().header.difficultyLabel}
+                    difficultyId={state().difficulty.id}
                     roundLabel={overview().header.roundLabel} phaseLabel={overview().header.phaseLabel}
                     trap={overview().header.trap}
                     navigation={wide() ? { backLabel: character().controls.backLabel, backShortcut: COMBAT_SHORTCUTS.back, onBack: back } : undefined}

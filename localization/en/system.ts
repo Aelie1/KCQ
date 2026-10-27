@@ -172,6 +172,8 @@ export const systemEnglishStrings: StringTable = {
     "ui.combatHeader.escape": "Escape",
     "ui.combatHeader.gameLog": "Game Log",
     "ui.combatHeader.targeting": "Targeting",
+    "ui.combatHeader.characterBonus": "Characters: +{amount} Hit and Escape",
+    "ui.combatHeader.enemyBonus": "Enemies: +{amount} Potency",
     "ui.characterDetails.back": "Go Back",
     "ui.characterDetails.bindingValue": "{value}",
     "ui.characterDetails.bindingsHeading": "Bindings / {count} Zones",
@@ -395,6 +397,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.library.usedBy": "Used By",
     "ui.library.variableAmount": "Variable",
     "ui.library.willpower": "Base Willpower",
+
 
     "moveType.arms.compact": "Arms",
     "moveType.mouth.compact": "Mouth",
