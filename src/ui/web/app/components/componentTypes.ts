@@ -45,6 +45,7 @@ export interface IntentViewModel extends IntentRowData {
 
 export interface EnemyCardData {
     currentHp: number;
+    incomingHealing: number;
     permanentEffects: readonly {
         id: string;
         accessibleLabel: string;

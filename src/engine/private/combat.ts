@@ -4,7 +4,8 @@ import { getEscapePotency, tr } from "../protected/mechanics";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
 import { iBinding, iCharacter, iEffect, iEntity, iGameState, iIntention, iMove, iMoveResult, iTargetInfo } from "../protected/types";
 import { AccuracyProfile, AccuracyResult, BattleState, HitBand, type EntitySide } from "../public/types";
-import { DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, REGEN_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
+import { getRegenerationHealing } from "../public/mechanics";
+import { DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
 import { iValidityInfo } from "./types";
 
 function getIEntitySide(entity: iEntity): EntitySide {
@@ -336,7 +337,7 @@ export function tickEnemies(state: iGameState): iEffect[] {
                 type: "damage",
                 source: enemy,
                 target: enemy,
-                amount: -regen * REGEN_MODIFIER
+                amount: -getRegenerationHealing(regen)
             });
         }
     }

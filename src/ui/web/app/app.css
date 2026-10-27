@@ -1152,6 +1152,12 @@ button {
     margin-left: auto;
 }
 
+.kcq-enemy-card__hp-meter > .kcq-projected-meter {
+    --kcq-projected-meter-current: var(--kcq-binding-severe);
+    --kcq-projected-meter-radius: 2px;
+    height: 100%;
+}
+
 
 .kcq-enemy-card__hp-anchor {
     position: relative;
@@ -2903,7 +2909,7 @@ button {
     background: var(--kcq-surface-meter-track);
 }
 
-.kcq-target-header__meter span {
+.kcq-target-header__meter > span:not(.kcq-projected-meter) {
     display: block;
     height: 100%;
     border-radius: 2px;

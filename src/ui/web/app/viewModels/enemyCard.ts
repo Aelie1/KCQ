@@ -1,3 +1,4 @@
+import { getRegenerationHealing } from "../../../../engine/public/mechanics";
 import type { Buff, Character, Enemy, EntityId, ModifierId } from "../../../../engine/public/types";
 import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
@@ -29,6 +30,7 @@ export function createEnemyCardViewModel(
     history: readonly GameLogPresentationEntry[] = [],
     enemies: readonly Enemy[] = [enemy],
     previewContext: Pick<EffectContext, "state" | "thresholds"> = {},
+    incomingHealing = 0,
 ): EnemyCardData {
     const partyIds = new Set(characters.map(({ id }) => id));
     const enemyIds = new Set(enemies.map(({ id }) => id));
@@ -64,6 +66,10 @@ export function createEnemyCardViewModel(
         name: presentation.entity(enemy.id),
         currentHp: enemy.currHp,
         maxHp: enemy.maxHp,
+        // Serialized modifiers already combine active buffs, passives, and difficulty.
+        // Pending buff additions/refreshes must not contribute another regeneration tick.
+        incomingHealing: Math.min(Math.max(0, enemy.maxHp - enemy.currHp),
+            incomingHealing + Math.max(0, getRegenerationHealing(enemy.modifiers.regeneration ?? 0))),
         linkedEntities: projectLinkedPlayers(enemy.buffs, characters, presentation),
         permanentEffects: enemy.buffs.flatMap(buff => {
             if (buff.duration !== undefined || !buff.icon) return [];
@@ -74,7 +80,7 @@ export function createEnemyCardViewModel(
             return [{
                 id: buff.id, icon: buff.icon,
                 // The compact bonus is hit; all authored modifiers remain in the tooltip and Details.
-                valueLabel: buff.modifiers?.hit !== undefined ? formatSignedNumber(buff.modifiers.hit) : buff.modifiers?.regeneration !== undefined ? formatSignedNumber(buff.modifiers.regeneration) : undefined,
+                valueLabel: buff.modifiers?.hit !== undefined ? formatSignedNumber(buff.modifiers.hit) : undefined,
                 accessibleLabel: [presentation.buff(buff.id, buff.severity), ...modifiers].join(": "),
             }];
         }),

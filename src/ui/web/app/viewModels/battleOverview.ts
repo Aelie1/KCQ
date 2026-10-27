@@ -1,6 +1,7 @@
 import type {
     ActionView,
     BindingId,
+    EntityId,
     GameState,
     ThresholdInfo,
     Trap
@@ -57,6 +58,18 @@ export function createBattleOverviewViewModel(
 ): BattleOverviewViewModel {
     const actionsById = new Map(actions.map((action) => [action.id, action]));
     const traps = state.traps.map((trap) => createTrapViewModel(trap, presentation));
+    const incomingHealing = new Map<EntityId, number>();
+    for (const enemy of state.enemies) {
+        if (enemy.skipped || enemy.currHp <= 0) continue;
+        for (const intention of enemy.intentions) {
+            if (intention.resolved) continue;
+            for (const effect of [...intention.effects, ...intention.targets.flatMap(target => target.effects)]) {
+                if (effect.type === "damage" && effect.amount < 0) {
+                    incomingHealing.set(effect.target, (incomingHealing.get(effect.target) ?? 0) - effect.amount);
+                }
+            }
+        }
+    }
     const party = state.characters.map((character) => {
         const action = actionsById.get(character.id);
         if (!action) {
@@ -98,7 +111,8 @@ export function createBattleOverviewViewModel(
                 : {}),
         },
         enemies: state.enemies.map((enemy) =>
-            createEnemyCardViewModel(enemy, presentation, state.characters, history, state.enemies, { state, thresholds })),
+            createEnemyCardViewModel(enemy, presentation, state.characters, history, state.enemies,
+                { state, thresholds }, incomingHealing.get(enemy.id))),
         enemiesHeading: presentation.ui("battleOverview.enemies"),
         party,
         partyHeading: presentation.ui("battleOverview.party"),

@@ -179,7 +179,13 @@ describe("responsive battle overview", () => {
         const meter = header.querySelector<HTMLElement>(".kcq-enemy-card__hp-meter");
         expect(!!meter).toBe(expanded);
         if (meter) {
-            expect(meter.querySelector<HTMLElement>("span")!.style.width).toBe("25%");
+            const projected = meter.querySelector<HTMLElement>(".kcq-projected-meter")!;
+            const clip = projected.querySelector<HTMLElement>(".kcq-projected-meter__fill-clip")!;
+            expect(projected.querySelector<HTMLElement>(".kcq-projected-meter__value")!.style.width).toBe("25%");
+            expect(getComputedStyle(projected).position).toBe("relative");
+            expect(getComputedStyle(projected).height).toBe("100%");
+            expect(getComputedStyle(clip).position).toBe("absolute");
+            expect(["", "transparent", "rgba(0, 0, 0, 0)"]).toContain(getComputedStyle(clip).backgroundColor);
             expect(meter.nextElementSibling?.querySelector(".kcq-enemy-card__hp")?.textContent).toBe("50 / 200");
             expect(getComputedStyle(meter).maxWidth).toBe("90px");
         }

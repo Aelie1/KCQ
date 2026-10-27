@@ -31,7 +31,7 @@ describe("enemy card live durations", () => {
         mount(() => createComponent(BattleOverviewPanel, { ...fixture, completeEnemyIntentions: true,
             get state() { return state(); },
         }));
-        const fill = document.querySelector<HTMLElement>(".kcq-enemy-card__hp-meter>span")!;
+        const fill = document.querySelector<HTMLElement>(".kcq-enemy-card__hp-meter .kcq-projected-meter__value")!;
         const hp = document.querySelector(".kcq-enemy-card__hp")!;
         const update = (current: number, max: number) => setState({ ...state(), enemies: [
             { ...state().enemies[0]!, currHp: current, maxHp: max },
@@ -41,6 +41,41 @@ describe("enemy card live durations", () => {
         update(0, 200); expect(fill.style.width).toBe("0%");
         update(200, 200); expect(fill.style.width).toBe("100%");
         update(200, 0); expect(fill.style.width).toBe("0%");
+    });
+    it("reactively renders capped healing while retaining the current HP fill and label", () => {
+        const fixture = battleOverviewFixture;
+        const enemy = { ...fixture.state.enemies[0]!, currHp: 50, intentions: [] };
+        const [state, setState] = createSignal<GameState>({ ...structuredClone(fixture.state), enemies: [enemy] });
+        mount(() => createComponent(BattleOverviewPanel, { ...fixture, completeEnemyIntentions: true,
+            get state() { return state(); },
+        }));
+        const meter = document.querySelector(".kcq-enemy-card__hp-meter")!;
+        const fill = meter.querySelector<HTMLElement>(".kcq-projected-meter__value")!;
+        const change = () => meter.querySelector<HTMLElement>(".kcq-projected-meter__change");
+        const hp = document.querySelector(".kcq-enemy-card__hp")!;
+        const update = (patch: Partial<GameState["enemies"][number]>) => setState({ ...state(), enemies: [{ ...state().enemies[0]!, ...patch }] });
+        expect(change()).toBeNull();
+        update({ intentions: [{ move: "healingPerfume", resolved: false,
+            targets: [], effects: [{ type: "damage", target: enemy.id, amount: -20 }],
+        }] });
+        expect(fill.style.width).toBe("25%");
+        expect(change()!.style.left).toBe("calc(25% - var(--kcq-projected-meter-radius))");
+        expect(change()!.style.width).toBe("calc(10% + var(--kcq-projected-meter-radius))");
+        expect(change()!.classList.contains("kcq-projected-meter__change--success")).toBe(true);
+        expect(hp.textContent).toBe("50 / 200");
+        update({ buffs: [{ id: "regenPerfume", duration: 2, modifiers: { regeneration: 3 } }], modifiers: { regeneration: 3 } });
+        expect(change()!.style.width).toBe("calc(25% + var(--kcq-projected-meter-radius))");
+        update({ currHp: 180 });
+        expect(fill.style.width).toBe("90%");
+        expect(change()!.style.width).toBe("calc(10% + var(--kcq-projected-meter-radius))");
+        update({ intentions: [] });
+        expect(change()!.style.width).toBe("calc(10% + var(--kcq-projected-meter-radius))");
+        update({ buffs: [], modifiers: {} });
+        expect(change()).toBeNull();
+        expect(hp.textContent).toBe("180 / 200");
+        update({ currHp: 200, modifiers: { regeneration: 3 } });
+        expect(change()).toBeNull();
+        expect(fill.style.width).toBe("100%");
     });
     it("wires real BattleApp application history into overview cards and updates after End Turn", () => {
         const engine = createStockEngine(1);

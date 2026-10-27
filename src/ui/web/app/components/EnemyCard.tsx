@@ -8,6 +8,7 @@ import type { EnemyCardData } from "./componentTypes";
 import { DurationPips } from "./DurationPips";
 import { IntentRow } from "./IntentRow";
 import { LinkedEntityChip } from "./LinkedEntityChip";
+import { ProjectedMeter } from "./ProjectedMeter";
 import { Shortcut } from "./Shortcut";
 import { StatusChip } from "./StatusChip";
 
@@ -33,9 +34,6 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
     });
     const actorReaction = reactionRef("actor", () => props.enemy.id);
     const cardReaction = (element: HTMLElement) => { actorReaction(element); };
-    const hpFillPercent = () => props.enemy.maxHp > 0
-        ? Math.min(100, Math.max(0, props.enemy.currentHp / props.enemy.maxHp * 100))
-        : 0;
     return (
         <article ref={cardReaction} class="kcq-enemy-card" classList={{ "kcq-shortcut-host": selectable(), "kcq-enemy-card--expanded": props.completeIntentions }}
             data-enemy-defeat={props.defeat ? "true" : undefined}
@@ -104,7 +102,8 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
                 <Show when={props.completeIntentions}>
                     <span ref={reactionRef("hp", () => props.enemy.id)}
                         class="kcq-enemy-card__hp-meter kcq-target-header__meter" aria-hidden="true">
-                        <span style={{ width: `${hpFillPercent()}%` }} />
+                        <ProjectedMeter value={props.enemy.currentHp} max={props.enemy.maxHp}
+                            change={props.enemy.incomingHealing} tone="enemy-hp" resultTone="success" size="compact" />
                     </span>
                 </Show>
                 <div class="kcq-enemy-card__hp-anchor">
