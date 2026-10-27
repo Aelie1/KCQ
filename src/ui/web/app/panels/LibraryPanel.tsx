@@ -36,6 +36,10 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
     const headingId = createUniqueId();
     const treeId = createUniqueId();
     const [expanded, setExpanded] = createSignal<Partial<Record<LibraryCategory, boolean>>>({});
+    const [expandedMoveOwners, setExpandedMoveOwners] = createSignal<Record<string, boolean>>({});
+    const moveGroups = createMemo(() => libraryMoveGroups(props.library, props.presentation).map(group => ({
+        ...group, key: group.owner ? group.owner.category + ":" + group.owner.id : "unowned",
+    })));
     const historyEntries = createMemo(() => {
         const visits = navigation.visits();
         const start = Math.max(0, Math.min(navigation.position() - 5, visits.length - 12));
@@ -79,6 +83,10 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
         const current = navigation.current().page;
         if (!nonNarrow()) return;
         if (current.kind !== "home") setExpanded(previous => ({ ...previous, [current.category]: true }));
+        if (current.kind === "entry" && current.category === "moves") {
+            const group = moveGroups().find(group => group.entries.some(entry => entry.id === current.id));
+            if (group) setExpandedMoveOwners(previous => ({ ...previous, [group.key]: true }));
+        }
         queueMicrotask(() => {
             if (!alive || !nonNarrow()) return;
             const revealSelection = (scroller: HTMLElement | null | undefined): void => {
@@ -134,6 +142,11 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
         openEntry: entry => open({ kind: "entry", ...entry }),
         openPage: open,
     };
+    const treeEntryButton = (entry: LibraryEntry): JSX.Element => <li>
+        <button type="button" class="kcq-library__tree-entry" data-library-tree-entry={entry.category + ":" + entry.id}
+            aria-current={page().kind === "entry" && (page() as LibraryEntry).category === entry.category && (page() as LibraryEntry).id === entry.id ? "page" : undefined}
+            onClick={() => value.openEntry(entry)}>{libraryName(entry, props.presentation)}</button>
+    </li>;
     const modal = (): JSX.Element => <div ref={overlay} class="kcq-library-overlay"
         on:click={event => { if (event.target === event.currentTarget) { event.stopPropagation(); props.onClose(); } }}
         onClick={event => event.stopPropagation()}>
@@ -148,11 +161,19 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
                             <span aria-hidden="true">{expanded()[category] ? "▾" : "▸"}</span>{label(props.presentation, category)}
                         </button>
                         <Show when={expanded()[category]}><ul id={treeId + "-" + category}>
-                            <For each={libraryEntries(props.library, category, props.presentation)}>{entry => <li>
-                                <button type="button" class="kcq-library__tree-entry" data-library-tree-entry={category + ":" + entry.id}
-                                    aria-current={page().kind === "entry" && (page() as LibraryEntry).category === category && (page() as LibraryEntry).id === entry.id ? "page" : undefined}
-                                    onClick={() => value.openEntry(entry)}>{libraryName(entry, props.presentation)}</button>
-                            </li>}</For>
+                            <Show when={category === "moves"} fallback={<For each={libraryEntries(props.library, category, props.presentation)}>{treeEntryButton}</For>}>
+                                <For each={moveGroups()}>{group => <li>
+                                    <button type="button" class="kcq-library__tree-owner" data-library-owner-toggle={group.key}
+                                        aria-expanded={!!expandedMoveOwners()[group.key]} aria-controls={treeId + "-moves-" + group.key}
+                                        onClick={() => setExpandedMoveOwners(previous => ({ ...previous, [group.key]: !previous[group.key] }))}>
+                                        <span aria-hidden="true">{expandedMoveOwners()[group.key] ? "▾" : "▸"}</span>
+                                        {group.owner ? libraryName(group.owner, props.presentation) : props.presentation.ui("library.moves")}
+                                    </button>
+                                    <Show when={expandedMoveOwners()[group.key]}><ul id={treeId + "-moves-" + group.key} class="kcq-library__tree-owner-entries">
+                                        <For each={group.entries}>{treeEntryButton}</For>
+                                    </ul></Show>
+                                </li>}</For>
+                            </Show>
                         </ul></Show>
                     </li>}</For></ul>
                 </nav>

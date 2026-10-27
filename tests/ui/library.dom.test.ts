@@ -11,7 +11,7 @@ import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
 import { LibraryPanel } from "../../src/ui/web/app/panels/LibraryPanel";
 import { layoutSize, ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
-import type { LibraryPage } from "../../src/ui/web/app/viewModels/library";
+import { libraryMoveGroups, libraryName, type LibraryPage } from "../../src/ui/web/app/viewModels/library";
 import { libraryDamageProfile } from "../../src/ui/web/app/viewModels/libraryMechanics";
 import { createEmptyContentLibrary } from "../helpers/library";
 import { stockStrings } from "../helpers/stockStrings";
@@ -753,6 +753,7 @@ function responsiveLibraryMount(columns: ResponsiveLayout["columns"] = 3, initia
 }
 const toggleCategory = (category: string) => element<HTMLButtonElement>('[data-library-category-toggle="' + category + '"]').click();
 const treeEntry = (category: string, id: string) => element<HTMLButtonElement>('[data-library-tree-entry="' + category + ':' + id + '"]');
+const ownerFolder = (key: string) => element<HTMLButtonElement>('[data-library-owner-toggle="' + key + '"]');
 const selectedTreeEntry = () => element<HTMLElement>('.kcq-library__tree [aria-current="page"]').dataset.libraryTreeEntry;
 const historyBack = () => element<HTMLButtonElement>(".kcq-library__history-back").click();
 const historyForward = () => element<HTMLButtonElement>(".kcq-library__history-forward").click();
@@ -814,32 +815,107 @@ describe("Library modal and desktop navigation", () => {
         expect(element('[data-library-category-toggle="enemies"]').getAttribute("aria-expanded")).toBe("true");
         expect(document.querySelectorAll("[data-library-history-index]")).toHaveLength(2);
     });
+    it.each([2, 3] as const)("groups moves in independently collapsed owner folders in %s-column mode", async columns => {
+        responsiveLibraryMount(columns); await tick(); toggleCategory("moves");
+        const groups = libraryMoveGroups(createStockEngine().getLibrary(), presentation);
+        const folders = [...document.querySelectorAll<HTMLButtonElement>("[data-library-owner-toggle]")];
+        expect(folders).toHaveLength(groups.length);
+        expect(document.querySelector('[data-library-tree-entry^="moves:"]')).toBeNull();
+        const ids: string[] = [];
+        for (const [index, group] of groups.entries()) {
+            const folder = folders[index]!;
+            expect(folder.getAttribute("aria-expanded")).toBe("false");
+            expect(folder.textContent).toBe("▸" + (group.owner ? libraryName(group.owner, presentation) : presentation.ui("library.moves")));
+            folder.focus(); folder.click(); await tick();
+            expect(document.activeElement).toBe(folder);
+            expect(folder.getAttribute("aria-expanded")).toBe("true");
+            const entries = document.getElementById(folder.getAttribute("aria-controls")!)!;
+            const keys = [...entries.querySelectorAll<HTMLElement>("[data-library-tree-entry]")].map(entry => entry.dataset.libraryTreeEntry!);
+            expect(keys).toEqual(group.entries.map(entry => "moves:" + entry.id)); ids.push(...keys);
+        }
+        expect(new Set(ids).size).toBe(Object.keys(createStockEngine().getLibrary().moves).length);
+        folders[0]!.click(); await tick();
+        expect(folders[0]!.getAttribute("aria-expanded")).toBe("false");
+        expect(folders[1]!.getAttribute("aria-expanded")).toBe("true");
+        toggleCategory("moves"); toggleCategory("moves");
+        expect(ownerFolder(folders[0]!.dataset.libraryOwnerToggle!).getAttribute("aria-expanded")).toBe("false");
+        expect(ownerFolder(folders[1]!.dataset.libraryOwnerToggle!).getAttribute("aria-expanded")).toBe("true");
+        expect(document.querySelector(".kcq-library__detail")).toBeNull();
+        expect(document.querySelectorAll("[data-library-history-index]")).toHaveLength(1);
+    });
+    it.each([
+        [2, "starlightBindings", "characters:ko"],
+        [3, "punch", "characters:matsuko"],
+        [2, "throwOff", "enemies:skunkette"],
+    ] as const)("reveals a direct move's owner in %s-column mode (%s)", async (columns, id, owner) => {
+        responsiveLibraryMount(columns, { kind: "entry", category: "moves", id }); await tick();
+        expect(element('[data-library-category-toggle="moves"]').getAttribute("aria-expanded")).toBe("true");
+        expect(ownerFolder(owner).getAttribute("aria-expanded")).toBe("true");
+        expect([...document.querySelectorAll('[data-library-owner-toggle][aria-expanded="true"]')]).toEqual([ownerFolder(owner)]);
+        expect(selectedTreeEntry()).toBe("moves:" + id);
+        expect(document.activeElement).toBe(element(".kcq-library__header h1"));
+    });
+    it.each([2, 3] as const)("keeps selection when folders collapse and reveals each historical owner in %s-column mode", async columns => {
+        responsiveLibraryMount(columns, { kind: "entry", category: "moves", id: "starlightBindings" }); await tick();
+        ownerFolder("characters:matsuko").click(); treeEntry("moves", "punch").click(); await tick();
+        expect(selectedTreeEntry()).toBe("moves:punch");
+        const article = element(".kcq-library__detail");
+        const folder = ownerFolder("characters:matsuko"); folder.focus(); folder.click(); await tick();
+        expect(folder.getAttribute("aria-expanded")).toBe("false");
+        expect(document.activeElement).toBe(folder);
+        expect(element(".kcq-library__detail")).toBe(article);
+        expect(document.querySelectorAll("[data-library-history-index]")).toHaveLength(2);
+        ownerFolder("characters:ko").click();
+        historyBack(); await tick();
+        expect(selectedTreeEntry()).toBe("moves:starlightBindings");
+        expect(ownerFolder("characters:ko").getAttribute("aria-expanded")).toBe("true");
+        expect(ownerFolder("characters:matsuko").getAttribute("aria-expanded")).toBe("false");
+        toggleCategory("moves"); historyForward(); await tick();
+        expect(selectedTreeEntry()).toBe("moves:punch");
+        expect(ownerFolder("characters:matsuko").getAttribute("aria-expanded")).toBe("true");
+        expect(ownerFolder("characters:ko").getAttribute("aria-expanded")).toBe("true");
+    });
     it("reveals linked and historical selections while preserving unrelated expansion and scrolling only when needed", async () => {
         const scroll = vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(() => { });
         const bounds = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
             return { top: this.dataset.libraryTreeEntry ? 200 : 0, bottom: this.dataset.libraryTreeEntry ? 230 : 100 } as DOMRect;
         });
         responsiveLibraryMount(3, { kind: "entry", category: "characters", id: "ko" }); await tick();
+        toggleCategory("moves"); ownerFolder("characters:matsuko").click(); toggleCategory("moves");
         toggleCategory("enemies"); toggleCategory("characters");
-        element('[data-library-focus="moves:starlightBindings"]').click(); await tick();
+        const link = element('[data-library-focus="moves:starlightBindings"]'); link.focus(); link.click(); await tick();
         expect(element(".kcq-library__detail").dataset.libraryId).toBe("starlightBindings");
         expect(selectedTreeEntry()).toBe("moves:starlightBindings");
+        expect(ownerFolder("characters:ko").getAttribute("aria-expanded")).toBe("true");
+        expect(ownerFolder("characters:matsuko").getAttribute("aria-expanded")).toBe("true");
         expect(element('[data-library-category-toggle="characters"]').getAttribute("aria-expanded")).toBe("false");
         expect(element('[data-library-category-toggle="enemies"]').getAttribute("aria-expanded")).toBe("true");
         expect(scroll).toHaveBeenLastCalledWith({ block: "nearest" });
         expect(scroll.mock.contexts.at(-1)).toBe(treeEntry("moves", "starlightBindings"));
+        ownerFolder("characters:ko").click();
         historyBack(); await tick();
         expect(selectedTreeEntry()).toBe("characters:ko");
+        expect(document.activeElement).toBe(element('[data-library-focus="moves:starlightBindings"]'));
         expect(element('[data-library-category-toggle="moves"]').getAttribute("aria-expanded")).toBe("true");
         expect(scroll.mock.contexts.at(-1)).toBe(treeEntry("characters", "ko"));
         bounds.mockImplementation(() => ({ top: 0, bottom: 100 }) as DOMRect); scroll.mockClear();
         historyForward(); await tick(); expect(scroll).not.toHaveBeenCalled();
+        expect(selectedTreeEntry()).toBe("moves:starlightBindings");
+        expect(ownerFolder("characters:ko").getAttribute("aria-expanded")).toBe("true");
+        expect(ownerFolder("characters:matsuko").getAttribute("aria-expanded")).toBe("true");
+        ownerFolder("characters:ko").click(); toggleCategory("moves");
+        element('[data-library-history-index="0"]').click(); await tick();
+        element('[data-library-history-index="1"]').click(); await tick();
+        expect(selectedTreeEntry()).toBe("moves:starlightBindings");
+        expect(ownerFolder("characters:ko").getAttribute("aria-expanded")).toBe("true");
     });
     it("reveals a self-reference without duplicating history or collapsing other categories", async () => {
         responsiveLibraryMount(3, { kind: "entry", category: "moves", id: "powerOfDenial" }); await tick();
+        const folder = element('[data-library-owner-toggle][aria-expanded="true"]'); folder.click();
         toggleCategory("enemies"); toggleCategory("moves");
         element('.kcq-library__availability-link[data-library-focus="moves:powerOfDenial"]').click(); await tick();
         expect(selectedTreeEntry()).toBe("moves:powerOfDenial");
+        expect(ownerFolder(folder.dataset.libraryOwnerToggle!).getAttribute("aria-expanded")).toBe("true");
         expect(element('[data-library-category-toggle="enemies"]').getAttribute("aria-expanded")).toBe("true");
         expect(document.querySelectorAll("[data-library-history-index]")).toHaveLength(1);
     });
@@ -878,6 +954,7 @@ describe("Library modal and desktop navigation", () => {
     });
     it("bounds the visible history without limiting Back/Forward navigation", async () => {
         responsiveLibraryMount(); await tick(); toggleCategory("moves");
+        for (const folder of document.querySelectorAll<HTMLButtonElement>("[data-library-owner-toggle]")) folder.click();
         const entries = [...document.querySelectorAll<HTMLButtonElement>(".kcq-library__tree-entry")].slice(0, 18);
         for (const entry of entries) { entry.click(); await tick(); }
         expect(document.querySelectorAll("[data-library-history-index]")).toHaveLength(12);
@@ -900,14 +977,19 @@ describe("Library modal and desktop navigation", () => {
         const article = element(".kcq-library__detail");
         setColumns(3); await tick();
         expect(element(".kcq-library__detail")).toBe(article); expect(selectedTreeEntry()).toBe("moves:starlightBindings");
+        expect(ownerFolder("characters:ko").getAttribute("aria-expanded")).toBe("true");
+        ownerFolder("characters:matsuko").click(); ownerFolder("characters:ko").click();
         toggleCategory("enemies"); historyBack(); await tick(); expect(selectedTreeEntry()).toBe("characters:ko");
         setColumns(1); await tick();
         expect(document.querySelector(".kcq-library__sidebar")).toBeNull();
         expect(element(".kcq-library__detail").dataset.libraryId).toBe("ko");
         setColumns(2); await tick();
         expect(element('[data-library-category-toggle="enemies"]').getAttribute("aria-expanded")).toBe("true");
+        expect(ownerFolder("characters:matsuko").getAttribute("aria-expanded")).toBe("true");
+        expect(ownerFolder("characters:ko").getAttribute("aria-expanded")).toBe("false");
         expect(element<HTMLButtonElement>(".kcq-library__history-forward").disabled).toBe(false);
         historyForward(); await tick(); expect(selectedTreeEntry()).toBe("moves:starlightBindings");
+        expect(ownerFolder("characters:ko").getAttribute("aria-expanded")).toBe("true");
         setColumns(1); await tick(); back(); await tick(); back(); await tick();
         expect(document.querySelector(".kcq-library__entry")).not.toBeNull();
         expect(element(".kcq-library__breadcrumbs").textContent).toContain(presentation.ui("library.characters"));

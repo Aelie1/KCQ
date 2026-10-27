@@ -11,13 +11,13 @@ import { latexMist, latexSpray, pounce, skunkette, skunketteQueen, throwOff } fr
 
 export const skunkCatalog: ContentCatalogFragment = {
     enemies: [
+        rainmaker,
         skunkette,
         skunk,
-        queen,
         fairy,
-        rainmaker,
         skunketteQueen,
         skunkEmpress,
+        queen,
     ],
 
     moves: [

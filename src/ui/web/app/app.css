@@ -5899,7 +5899,8 @@ button {
     overflow-wrap: anywhere;
 }
 
-.kcq-library__tree-category {
+.kcq-library__tree-category,
+.kcq-library__tree-owner {
     display: flex;
     gap: 6px;
     align-items: center;
@@ -5908,6 +5909,14 @@ button {
 
 .kcq-library__tree .kcq-library__tree-entry {
     padding-left: 20px;
+}
+
+.kcq-library__tree .kcq-library__tree-owner {
+    padding-left: 20px;
+}
+
+.kcq-library__tree-owner-entries .kcq-library__tree-entry {
+    padding-left: 40px;
 }
 
 .kcq-library__sidebar button:hover {

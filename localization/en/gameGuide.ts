@@ -110,6 +110,8 @@ export const gameGuideEnglishStrings: StringTable = {
     "guide.modifiers.willpower.paragraph.0": "Affects the accuracy of [Willpower] moves",
     "guide.modifiers.spread.heading": "[Spread]",
     "guide.modifiers.spread.paragraph.0": "Affects the amount of binding that is spread to other locations by escapes",
+    "guide.modifiers.regeneration.heading": "[Regeneration]",
+    "guide.modifiers.regeneration.paragraph.0": "Affects the amount of health automatically gained every round",
     "guide.strategy.summary": "Some tips to get you started",
     "guide.strategy.title": "Strategy",
     "guide.strategy.overview.paragraph.0": "This section has some tips to help you out if you are struggling:",

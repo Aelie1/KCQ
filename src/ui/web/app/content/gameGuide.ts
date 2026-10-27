@@ -203,6 +203,12 @@ export const GAME_GUIDE_PAGES: readonly GuidePage[] = [
                 heading: "spread.heading",
                 paragraphs: ["spread.paragraph.0"],
                 modifier: "spread"
+            },
+            {
+                id: "regeneration",
+                heading: "regeneration.heading",
+                paragraphs: ["regeneration.paragraph.0"],
+                modifier: "regeneration"
             }
         ]
     },
