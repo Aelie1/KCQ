@@ -208,7 +208,7 @@ describe("compact preview styles", () => {
         const log = mountPreview([action("ko"), action("matsuko"), action("hinari"), action("ko")]);
         log.setStyle("story");
         const body = log.host.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!;
-        expect(log.host.querySelector("h2")!.textContent).toBe("Game Log");
+        expect(log.host.querySelector("h2")!.textContent).toBe("Story Log");
         expect(log.host.querySelector('[role="tab"]')).toBeNull();
         expect(body.querySelectorAll("article")).toHaveLength(3);
         expect(body.textContent).toContain("Ko-chan uses Telekinesis.");
@@ -217,6 +217,7 @@ describe("compact preview styles", () => {
         log.setLines(1); expect(body.querySelectorAll("article")).toHaveLength(1);
         body.click(); expect(log.onOpen).toHaveBeenCalledOnce();
         log.setStyle("game");
+        expect(log.host.querySelector("h2")!.textContent).toBe("Game Log");
         expect(body.querySelector(".kcq-game-log__story-text")).toBeNull();
         expect(body.querySelectorAll("article")).toHaveLength(1);
         log.setLines(0); expect(log.host.childElementCount).toBe(0);
@@ -227,9 +228,12 @@ describe("compact preview styles", () => {
         expect(log.host.querySelectorAll('[role="log"]')).toHaveLength(1);
         expect(log.host.querySelector(".kcq-game-log__story-text")).toBeNull();
         log.setFullStyle("both");
+        expect([...log.host.querySelectorAll("h2")].map(h => h.textContent)).toEqual(["Game Log", "Story Log"]);
+        expect(log.host.querySelector(".kcq-full-game-log__panel h2")).toBeNull();
         expect(log.host.querySelectorAll('[role="log"]')).toHaveLength(2);
         expect(log.host.querySelector(".kcq-game-log__story-text")).not.toBeNull();
         log.setFullStyle("story");
+        expect(log.host.querySelector("h2")!.textContent).toBe("Story Log");
         expect(log.host.querySelectorAll('[role="log"]')).toHaveLength(1);
         expect(log.host.querySelector(".kcq-game-log__story-text")).not.toBeNull();
         expect(log.host.querySelector("button")).toBeNull();

@@ -666,7 +666,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         return <Portal mount={logModal() ? document.body : stage} ref={container => { container.style.display = "contents"; }}>
             <div ref={host} class="kcq-battle-log" classList={{ "kcq-battle-log--modal": logModal() }}
                 role={logModal() ? "dialog" : undefined} aria-modal={logModal() ? true : undefined}
-                aria-label={logModal() ? props.presentation.ui("combatHeader.gameLog") : undefined}
+                aria-label={logModal() ? props.presentation.ui(logStyles.full === "story" ? "gameLog.storyLog" : "combatHeader.gameLog") : undefined}
                 onClick={event => { if (logModal() && event.target === host) closeLog(); }}
                 onKeyDown={event => {
                     if (!logModal() || event.key !== "Tab") return;

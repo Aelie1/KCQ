@@ -109,7 +109,7 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow character work
                 expect(getComputedStyle(host).width).toBe(`${LAYOUT_WIDTHS[3]}px`);
                 expect(element(".kcq-combat-header__title").textContent).toBe(fixture.presentation.encounter(fixture.state.encounter!.id));
                 const headings = [...host.querySelectorAll(".kcq-battle-section__heading h2")];
-                expect(headings.map(heading => heading.textContent)).toEqual(["Character / Ko-chan", "Commands / Ko-chan", "Game Log"]);
+                expect(headings.map(heading => heading.textContent)).toEqual(["Character / Ko-chan", "Commands / Ko-chan", "Game Log", "Story Log"]);
                 for (const heading of headings) {
                     expect(getComputedStyle(heading).textTransform).toBe("uppercase");
                     expect(getComputedStyle(heading.parentElement!).height).toBe("16px");

@@ -76,6 +76,11 @@ export function FullGameLog(props: FullGameLogProps): JSX.Element {
     onCleanup(() => scroll.dispose());
     return <div class="kcq-full-game-log" classList={{ "kcq-full-game-log--both": style() === "both" }}>
         <Show when={style() !== "story"}><LogHistory {...props} kind="game" rounds={rounds()} scroll={scroll} /></Show>
+        <Show when={style() === "both"}>
+            <header class="kcq-battle-section__heading kcq-full-game-log__story-heading">
+                <h2>{props.presentation.ui("gameLog.storyLog")}</h2>
+            </header>
+        </Show>
         <Show when={style() !== "game"}><LogHistory {...props} kind="story" rounds={rounds()} scroll={scroll} /></Show>
     </div>;
 }

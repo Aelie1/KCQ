@@ -585,12 +585,19 @@ it.each([390, 1024, 1920])("applies every full style to ongoing and completed ba
         }
         else if (width < AUTO_WIDE_BREAKPOINT) element(".kcq-compact-game-log").click();
         const histories = element(".kcq-full-game-log");
+        const title = style === "story" ? "Story Log" : "Game Log";
+        if (width < AUTO_WIDE_BREAKPOINT || outcome === "defeat") {
+            expect(element(".kcq-game-log .kcq-combat-header__breadcrumb").textContent).toBe(title);
+            const modal = document.querySelector(".kcq-battle-log--modal");
+            if (modal) expect(modal.getAttribute("aria-label")).toBe(title);
+        } else expect(element(".kcq-battle-section--game-log > header h2").textContent).toBe(title);
+        expect(histories.querySelector(".kcq-full-game-log__story-heading h2")?.textContent).toBe(style === "both" ? "Story Log" : undefined);
         const panels = [...histories.querySelectorAll<HTMLElement>('[role="log"]')];
         expect(panels).toHaveLength(style === "both" ? 2 : 1);
         expect([...histories.querySelectorAll("section")].map(p => p.getAttribute("aria-label")))
             .toEqual(style === "both" ? ["Game Log", "Story Log"] : [style === "game" ? "Game Log" : "Story Log"]);
         expect(histories.querySelector('[role="tab"]')).toBeNull();
-        expect(getComputedStyle(histories).gridTemplateRows).toBe(style === "both" ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)");
+        expect(getComputedStyle(histories).gridTemplateRows).toBe(style === "both" ? "minmax(0, 1fr) auto minmax(0, 1fr)" : "minmax(0, 1fr)");
         for (const panel of panels) {
             expect(getComputedStyle(panel).overflowY).toBe("auto");
             expect(getComputedStyle(panel).minHeight).toBe("0");
@@ -627,7 +634,7 @@ it.each([390, 1024, 1920])("synchronizes round fractions through the actual log 
     flush();
     game.scrollTop = 300; game.dispatchEvent(new Event("scroll")); flush(); expect(story.scrollTop).toBe(500);
     story.scrollTop = 1100; story.dispatchEvent(new Event("scroll")); flush(); expect(game.scrollTop).toBe(700);
-    expect(getComputedStyle(full).gridTemplateRows).toBe("repeat(2, minmax(0, 1fr))");
+    expect(getComputedStyle(full).gridTemplateRows).toBe("minmax(0, 1fr) auto minmax(0, 1fr)");
     expect(getComputedStyle(game).overflowY).toBe("auto"); expect(getComputedStyle(story).overflowY).toBe("auto");
     expect(!!document.querySelector(".kcq-battle-log--modal")).toBe(width >= AUTO_MEDIUM_BREAKPOINT && width < AUTO_WIDE_BREAKPOINT);
 });

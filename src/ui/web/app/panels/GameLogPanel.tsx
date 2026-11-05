@@ -23,19 +23,20 @@ export interface GameLogPanelProps {
 
 export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
     const header = createMemo(() => createCombatHeaderViewModel(props.state, props.presentation));
+    const title = () => props.presentation.ui(props.style === "story" ? "gameLog.storyLog" : "combatHeader.gameLog");
     let content!: HTMLDivElement;
     onMount(() => {
         if (props.focusBackOnMount) content.closest(".kcq-screen-layout")?.querySelector<HTMLButtonElement>(".kcq-combat-header__back")?.focus();
     });
 
     return (
-        <ScreenLayout class="kcq-game-log" ariaLabel={props.presentation.ui("combatHeader.gameLog")}
+        <ScreenLayout class="kcq-game-log" ariaLabel={title()}
             header={
                 <>
                     <CombatHeader
                         variant="subscreen"
                         encounterLabel={header().encounterLabel}
-                        contextLabel={props.presentation.ui("combatHeader.gameLog")}
+                        contextLabel={title()}
                         roundLabel={header().roundLabel}
                         phaseLabel={header().phaseLabel}
                         backLabel={props.presentation.ui("characterDetails.back")}

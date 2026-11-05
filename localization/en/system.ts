@@ -82,7 +82,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.battleSettings.playbackSpeed.fast": "Fast",
     "ui.battleSettings.playbackSpeed.normal": "Normal",
     "ui.battleSettings.playbackSpeed.slow": "Slow",
-    "ui.battleSettings.overviewGameLogLines": "Overview Game Log Lines",
+    "ui.battleSettings.overviewGameLogLines": "Compact Log Lines",
     "ui.battleSettings.fullLogStyle": "Full Log Style",
     "ui.battleSettings.compactLogStyle": "Compact Log Style",
     "ui.battleSettings.logStyle.game": "Game Log",

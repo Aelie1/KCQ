@@ -100,10 +100,11 @@ function MeasuredGameLog(props: CompactGameLogProps): JSX.Element {
 
 export function CompactGameLog(props: CompactGameLogProps): JSX.Element {
     const headingId = createUniqueId();
+    const title = () => props.presentation.ui((props.scrollable ? props.fullStyle : props.style) === "story" ? "gameLog.storyLog" : "combatHeader.gameLog");
     return <Show when={props.lines > 0 || props.headingAction || props.scrollable}>
         <section class="kcq-battle-section kcq-battle-section--game-log" aria-labelledby={headingId}>
             <header class="kcq-battle-section__heading">
-                <h2 id={headingId}>{props.presentation.ui("combatHeader.gameLog")}</h2>
+                <h2 id={headingId}>{title()}</h2>
             </header>
             <Show when={props.scrollable} fallback={<Show when={props.lines > 0}><MeasuredGameLog {...props} /></Show>}>
                 <FullGameLog entries={props.entries} presentation={props.presentation} library={props.library} party={props.party}
