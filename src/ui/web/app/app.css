@@ -161,6 +161,7 @@ button {
 }
 
 .kcq-game-log>.kcq-screen-layout__body {
+    overflow: hidden;
     overflow-anchor: none;
     background: var(--kcq-surface-card);
     scrollbar-width: thin;
@@ -710,52 +711,6 @@ button {
 .kcq-battle-overview-wide .kcq-screen-layout__content:has(.kcq-battle-section--game-log),
 .kcq-battle-overview-wide .kcq-battle-section--game-log {
     height: 100%;
-    min-height: 0;
-}
-
-.kcq-overview-game-log-history {
-    flex: 1 1 0;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-anchor: none;
-    border-radius: 8px;
-    background: var(--kcq-surface-card);
-}
-
-.kcq-overview-game-log-history>* {
-    flex-shrink: 0;
-}
-
-.kcq-overview-game-log-tabs {
-    gap: 16px;
-    overflow: visible;
-}
-
-.kcq-overview-game-log-tabs h2 {
-    flex: 0 0 auto;
-}
-
-.kcq-log-tab {
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    color: var(--kcq-text-muted);
-    font: inherit;
-    font-weight: 700;
-    text-transform: uppercase;
-    cursor: pointer;
-}
-
-.kcq-log-tab[aria-selected="true"] {
-    color: var(--kcq-text-primary);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-}
-
-.kcq-overview-game-log-panel {
-    display: flex;
-    flex: 1 1 0;
     min-height: 0;
 }
 
@@ -1785,12 +1740,58 @@ button {
     line-height: 1.5;
 }
 
-.kcq-game-log__tabs {
+.kcq-game-log>.kcq-screen-layout__body>.kcq-screen-layout__content,
+.kcq-game-log__histories {
+    height: 100%;
+    min-height: 0;
+}
+
+.kcq-full-game-log {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    flex: 1 1 0;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.kcq-full-game-log--both {
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.kcq-full-game-log__panel {
     display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 6px 12px 8px;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    background: var(--kcq-surface-card);
+}
+
+.kcq-full-game-log__panel + .kcq-full-game-log__panel {
+    border-top: 1px solid var(--kcq-structure-border);
+}
+
+.kcq-full-game-log__heading {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 6px 12px;
     font-size: 10px;
+    text-transform: uppercase;
+}
+
+.kcq-full-game-log__viewport {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overflow-anchor: none;
+    scrollbar-width: thin;
+}
+
+.kcq-full-game-log__viewport .kcq-game-log__scroll > * {
+    flex-shrink: 0;
 }
 
 .kcq-game-log__story-text {

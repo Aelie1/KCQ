@@ -3,6 +3,7 @@ import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameLogPresentationEntry } from "../../src/ui/presentation/gameLog";
 import { Presentation } from "../../src/ui/presentation/presentation";
+import type { CompactLogStyle, FullLogStyle } from "../../src/ui/web/app/gameLogMode";
 import { CompactGameLog } from "../../src/ui/web/app/components/CompactGameLog";
 import { createOverviewGameLogPreference } from "../../src/ui/web/app/overviewGameLogLines";
 import { BattleSettingsPanel } from "../../src/ui/web/app/panels/BattleSettingsPanel";
@@ -21,13 +22,16 @@ function mountPreview(initial = [action()], scrollable = false) {
     const host = document.createElement("div"); document.body.append(host);
     const [entries, setEntries] = createSignal<readonly GameLogPresentationEntry[]>(initial);
     const [lines, setLines] = createSignal(3);
+    const [style, setStyle] = createSignal<CompactLogStyle>("game");
+    const [fullStyle, setFullStyle] = createSignal<FullLogStyle>("game");
     const [language, setLanguage] = createSignal(presentation);
     const onOpen = vi.fn();
     unmount = render(() => createComponent(CompactGameLog, {
         get entries() { return entries(); }, get lines() { return lines(); }, get presentation() { return language(); },
         party: ["ko", "matsuko", "hinari"], onOpen, scrollable,
+        get style() { return style(); }, get fullStyle() { return fullStyle(); },
     }), host);
-    return { host, setEntries, setLines, setLanguage, onOpen };
+    return { host, setEntries, setLines, setLanguage, setStyle, setFullStyle, onOpen };
 }
 
 describe("Overview Game Log preference", () => {
@@ -92,7 +96,7 @@ describe("compact Game Log preview", () => {
         const log = mountPreview(history, true);
         const viewport = log.host.querySelector<HTMLElement>('[role="log"]')!;
         Object.defineProperties(viewport, {
-            scrollHeight: { get: () => viewport.children.length * 50 }, clientHeight: { value: 100 },
+            scrollHeight: { get: () => viewport.querySelectorAll("article").length * 50 }, clientHeight: { value: 100 },
         });
         expect(viewport.querySelectorAll("article")).toHaveLength(12);
         expect(viewport.tabIndex).toBe(0);
@@ -199,62 +203,35 @@ describe("compact Game Log preview", () => {
     });
 });
 
-describe("inline Wide history tabs", () => {
-    it("switches to localized Story prose in the same viewport and restores the mechanical history", () => {
-        const log = mountPreview([action()], true);
-        const viewport = log.host.querySelector<HTMLElement>('[role="log"]')!;
-        const combat = viewport.innerHTML;
-        const tabs = [...log.host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-        expect(tabs.map(tab => tab.textContent)).toEqual(["Game Log", "Story Log"]);
-        tabs[1]!.click();
-        expect(viewport.textContent).toContain("Ko-chan uses Telekinesis.");
-        expect(log.host.querySelector('[role="log"]')).toBe(viewport);
-        expect(tabs[1]!.getAttribute("aria-selected")).toBe("true");
-        expect(log.onOpen).not.toHaveBeenCalled();
-        log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.storyLog": "Translated Story", "move.telekinesis.narrative.action": "{actor}: {move}!" }));
-        expect(tabs[1]!.textContent).toBe("Translated Story");
-        expect(viewport.textContent).toContain("Ko-chan: Telekinesis!");
-        log.setLanguage(presentation);
-        tabs[0]!.click();
-        expect(viewport.innerHTML).toBe(combat);
-    });
-
-    it("retains each tab's scrollback and auto-follow, with keyboard tab navigation", () => {
-        const pending = new Map<number, FrameRequestCallback>(); let id = 0;
-        vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { pending.set(++id, callback); return id; });
-        vi.stubGlobal("cancelAnimationFrame", (frame: number) => pending.delete(frame));
-        const flush = () => { for (const [frame, callback] of [...pending]) { pending.delete(frame); callback(0); } };
-        const entries = Array.from({ length: 12 }, () => action());
-        const log = mountPreview(entries, true);
-        const viewport = log.host.querySelector<HTMLElement>('[role="log"]')!;
-        Object.defineProperties(viewport, { scrollHeight: { value: 1000 }, clientHeight: { value: 100 } });
-        const tabs = [...log.host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-        const scroll = (top: number) => { viewport.scrollTop = top; viewport.dispatchEvent(new Event("scroll")); };
-        flush(); expect(viewport.scrollTop).toBe(900);
-        scroll(125); tabs[1]!.click(); flush(); expect(viewport.scrollTop).toBe(900);
-        scroll(250); tabs[0]!.click(); flush(); expect(viewport.scrollTop).toBe(125);
-        log.setEntries([...entries, action()]); flush(); expect(viewport.scrollTop).toBe(125);
-        tabs[0]!.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true, cancelable: true }));
-        flush(); expect(document.activeElement).toBe(tabs[1]); expect(viewport.scrollTop).toBe(250);
-        expect(tabs[0]!.tabIndex).toBe(-1);
-        const panel = log.host.querySelector('[role="tabpanel"]')!;
-        expect(panel.getAttribute("aria-labelledby")).toBe(tabs[1]!.id);
-        expect(tabs[1]!.getAttribute("aria-controls")).toBe(panel.id);
-        scroll(900); log.setEntries([...entries, action(), action()]); flush(); expect(viewport.scrollTop).toBe(900);
-    });
-});
-
-describe("cropped preview tabs", () => {
-    it("switches prose without opening history and opens it only from the log body", () => {
-        const log = mountPreview([action()]);
-        const tabs = [...log.host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-        tabs[1]!.click();
-        const body = log.host.querySelector<HTMLButtonElement>('.kcq-compact-game-log')!;
-        expect(body.textContent).toContain('Ko-chan uses Telekinesis.');
-        expect(body.querySelector('.kcq-game-log__story-text')).not.toBeNull();
-        expect(log.onOpen).not.toHaveBeenCalled();
+describe("compact preview styles", () => {
+    it("selects prose independently of full history, preserves line limits, and opens from the body", () => {
+        const log = mountPreview([action("ko"), action("matsuko"), action("hinari"), action("ko")]);
+        log.setStyle("story");
+        const body = log.host.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!;
+        expect(log.host.querySelector("h2")!.textContent).toBe("Game Log");
+        expect(log.host.querySelector('[role="tab"]')).toBeNull();
+        expect(body.querySelectorAll("article")).toHaveLength(3);
+        expect(body.textContent).toContain("Ko-chan uses Telekinesis.");
+        log.setFullStyle("game");
+        expect(body.querySelectorAll(".kcq-game-log__story-text")).toHaveLength(3);
+        log.setLines(1); expect(body.querySelectorAll("article")).toHaveLength(1);
         body.click(); expect(log.onOpen).toHaveBeenCalledOnce();
-        tabs[0]!.click(); expect(body.querySelector('.kcq-game-log__story-text')).toBeNull();
-        expect(body.textContent).toContain('Telekinesis');
+        log.setStyle("game");
+        expect(body.querySelector(".kcq-game-log__story-text")).toBeNull();
+        expect(body.querySelectorAll("article")).toHaveLength(1);
+        log.setLines(0); expect(log.host.childElementCount).toBe(0);
+    });
+    it("uses Full Log Style for wide history regardless of compact style and line count", () => {
+        const log = mountPreview([action()], true);
+        log.setStyle("story"); log.setLines(0);
+        expect(log.host.querySelectorAll('[role="log"]')).toHaveLength(1);
+        expect(log.host.querySelector(".kcq-game-log__story-text")).toBeNull();
+        log.setFullStyle("both");
+        expect(log.host.querySelectorAll('[role="log"]')).toHaveLength(2);
+        expect(log.host.querySelector(".kcq-game-log__story-text")).not.toBeNull();
+        log.setFullStyle("story");
+        expect(log.host.querySelectorAll('[role="log"]')).toHaveLength(1);
+        expect(log.host.querySelector(".kcq-game-log__story-text")).not.toBeNull();
+        expect(log.host.querySelector("button")).toBeNull();
     });
 });

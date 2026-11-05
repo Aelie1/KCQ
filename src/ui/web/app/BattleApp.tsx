@@ -26,7 +26,7 @@ import { CombatHeader } from "./components/CombatHeader";
 import { CompactGameLog } from "./components/CompactGameLog";
 import { Shortcut } from "./components/Shortcut";
 import { createEnemyDefeats } from "./enemyDefeats";
-import { createGameLogModePreference } from "./gameLogMode";
+import { createLogStylePreferences, type LogStylePreferences } from "./gameLogMode";
 import { COMBAT_SHORTCUTS, useCombatKeyboard, type SharedKeyboard } from "./keyboard";
 import type { LanguageSelection } from "./language";
 import { getNextEncounter } from "./nextEncounter";
@@ -63,6 +63,7 @@ export interface BattleAppProps {
     language?: LanguageSelection;
     theme?: ThemePreference;
     overviewGameLog?: OverviewGameLogPreference;
+    logStyles?: LogStylePreferences;
     shortcutHints?: ShortcutHintPreference;
     playbackSpeed?: PlaybackSpeedPreference;
     viewPreferences?: ViewPreferences;
@@ -108,7 +109,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     let selectedTargetIds: readonly EntityId[] = [];
     let selectedEscape: Pick<EscapeInfo, "binding" | "target"> | undefined;
     const [logOpen, setLogOpen] = createSignal(false);
-    const [gameLogMode, setGameLogMode] = createGameLogModePreference();
+    const logStyles = props.logStyles ?? createLogStylePreferences();
     let logTrigger: Element | null = null;
     const closeLog = (): void => {
         setLogOpen(false);
@@ -116,7 +117,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             if (resultModel()) return; // The result panel restores its own View Game Log focus.
             const target = logTrigger instanceof HTMLElement && logTrigger.isConnected
                 ? logTrigger : stage?.querySelector<HTMLElement>(".kcq-compact-game-log")
-                ?? stage?.querySelector<HTMLElement>('.kcq-overview-game-log-tabs [aria-selected="true"]');
+                ?? stage?.querySelector<HTMLElement>(".kcq-full-game-log__viewport");
             if (target && !target.closest("[inert], [hidden]")) target.focus();
         });
     };
@@ -441,7 +442,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     createEffect(() => {
         if (!logOpen() || !wide() || logModal()) return;
         queueMicrotask(() => {
-            if (logOpen() && wide() && !logModal()) stage?.querySelector<HTMLElement>(".kcq-overview-game-log-history")?.focus();
+            if (logOpen() && wide() && !logModal()) stage?.querySelector<HTMLElement>(".kcq-full-game-log__viewport")?.focus();
         });
     });
     const expandedEnemies = () => viewPreferences.enemyCards === "auto" ? nonNarrow() : viewPreferences.enemyCards === "expanded";
@@ -468,8 +469,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             get actions() { return actions(); },
             get gameLogLines() { return logReplacement() ? 0 : overviewGameLog.value; },
             get history() { return logEntries(); },
-            get gameLogMode() { return gameLogMode(); },
-            onGameLogModeChange: setGameLogMode,
+            get compactLogStyle() { return logStyles.compact; },
+            get fullLogStyle() { return logStyles.full; },
             library,
             get presentation() { return props.presentation; },
             get state() { return state(); },
@@ -643,7 +644,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 gameLog: () => <CompactGameLog entries={logEntries()} presentation={props.presentation} library={library}
                     party={state().characters.map(character => character.id)} lines={overviewGameLog.value}
                     scrollable={wide()} headingAction={!wide()} onOpen={toggleLog}
-                    mode={gameLogMode()} onModeChange={setGameLogMode} />,
+                    style={logStyles.compact} fullStyle={logStyles.full} encounterId={state().encounter?.id} round={state().turn.round} />,
             }} />;
     };
 
@@ -659,12 +660,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             const modal = logModal();
             queueMicrotask(() => {
                 if (!logOpen() || (wide() && !logModal())) return;
-                if (modal || !host.contains(document.activeElement)) host.querySelector<HTMLElement>(".kcq-screen-layout__body")?.focus();
+                if (modal || !host.contains(document.activeElement)) host.querySelector<HTMLElement>(".kcq-full-game-log__viewport")?.focus();
             });
-        });
-        onMount(() => {
-            const body = host.querySelector<HTMLElement>(".kcq-screen-layout__body");
-            if (body) body.tabIndex = 0;
         });
         return <Portal mount={logModal() ? document.body : stage} ref={container => { container.style.display = "contents"; }}>
             <div ref={host} class="kcq-battle-log" classList={{ "kcq-battle-log--modal": logModal() }}
@@ -682,7 +679,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     }
                 }}>
                 <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} library={library} onBack={back}
-                    mode={gameLogMode()} onModeChange={setGameLogMode}
+                    style={logStyles.full}
                     showBack={!logModal()} focusBackOnMount={!logModal()} />
             </div></Portal>;
     };
@@ -710,7 +707,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 </ResponsiveLayoutContext.Provider></Show>
                 <Show when={settingsOpen() && !libraryOpen()}>
                     <BattleSettingsPanel presentation={props.presentation} release={props.release ?? ""}
-                        language={props.language} theme={theme} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences} returnFocus={settingsTrigger}
+                        language={props.language} theme={theme} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} logStyles={logStyles} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences} returnFocus={settingsTrigger}
                         onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
                         onBackToLevelSelect={props.onBackToLevelSelect} onBackToTitle={props.onBackToTitle} />
                 </Show>

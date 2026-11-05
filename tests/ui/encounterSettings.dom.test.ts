@@ -118,7 +118,7 @@ describe("encounter screen settings", () => {
         const { panel, prepareBattle } = mountSelection(screen);
         const { dialog } = openSettings();
         expect([...dialog.querySelectorAll("button, label, hr")].map(element => element.tagName))
-            .toEqual(["BUTTON", ...Array(8).fill("LABEL"), "BUTTON", "HR", "BUTTON"]);
+            .toEqual(["BUTTON", ...Array(10).fill("LABEL"), "BUTTON", "HR", "BUTTON"]);
         expect([...dialog.querySelectorAll("button")].map(control => control.textContent))
             .toEqual(["Resume", "Reset to Defaults", "Back to Title Screen"]);
         expect(document.querySelector(".kcq-combat-header__library")?.getAttribute("aria-label"))
@@ -260,7 +260,14 @@ it("applies and resets shared view preferences from encounter Settings without c
     const theme = dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__theme select")!;
     theme.value = "light"; theme.dispatchEvent(new Event("change", { bubbles: true }));
     expect(document.documentElement.dataset.kcqTheme).toBe("light");
+    const full = dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__full-log-style select")!;
+    const compact = dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__compact-log-style select")!;
+    expect([full.value, compact.value]).toEqual(["both", "game"]);
+    for (const select of [full, compact]) { select.value = "story"; select.dispatchEvent(new Event("change", { bubbles: true })); }
     button("Reset to Defaults").click();
+    expect([full.value, compact.value]).toEqual(["both", "game"]);
+    expect(window.localStorage.getItem("kcq.fullLogStyle")).toBe("both");
+    expect(window.localStorage.getItem("kcq.compactLogStyle")).toBe("game");
     expect(theme.value).toBe("dark");
     expect(document.documentElement.dataset.kcqTheme).toBe("dark");
     expect(document.querySelector('[role="dialog"]')).toBe(dialog);

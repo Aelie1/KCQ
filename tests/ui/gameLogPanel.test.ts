@@ -38,7 +38,7 @@ const move = (targets: MoveEvent["targets"] = [], effects: LeafEvent[] = [], id 
 });
 const damaged = (target: string, amount: number): LeafEvent => ({ type: "enemyDamaged", target, amount });
 const renderEntries = (entries: readonly GameLogPresentationEntry[], p = presentation): string =>
-    renderToString(() => createComponent(GameLogPanel, { entries, presentation: p, state: state() }));
+    renderToString(() => createComponent(GameLogPanel, { style: "game", entries, presentation: p, state: state() }));
 const text = (html: string): string => html.replace(/<[^>]*>/g, "").replaceAll("&gt;", ">").replaceAll("&amp;", "&").replaceAll("&#39;", "'");
 const count = (html: string, kind: string) => (html.match(new RegExp('data-outcome="' + kind + '"', "g")) ?? []).length;
 
@@ -109,8 +109,8 @@ describe("compact graphical Game Log", () => {
     });
     it("omits modal navigation without changing the log entries", () => {
         const clean = (html: string) => html.replace(/<!--[^>]*-->/g, "");
-        const narrow = clean(renderToString(() => createComponent(GameLogPanel, gameLogFixture)));
-        const modal = clean(renderToString(() => createComponent(GameLogPanel, { ...gameLogFixture, showBack: false })));
+        const narrow = clean(renderToString(() => createComponent(GameLogPanel, { ...gameLogFixture, style: "game" })));
+        const modal = clean(renderToString(() => createComponent(GameLogPanel, { ...gameLogFixture, style: "game", showBack: false })));
         expect(narrow).toContain('class="kcq-combat-header__back');
         expect(modal).not.toContain('class="kcq-combat-header__back');
         expect(modal).toContain("kcq-combat-header--without-navigation");
@@ -119,7 +119,7 @@ describe("compact graphical Game Log", () => {
     });
 
     it("renders localized fixture entries in chronological event order", () => {
-        const html = renderToString(() => createComponent(GameLogPanel, gameLogFixture));
+        const html = renderToString(() => createComponent(GameLogPanel, { ...gameLogFixture, style: "game" }));
         const body = text(html);
         expect(body.indexOf("Escape")).toBeLessThan(body.indexOf("Telekinesis"));
         expect(body.indexOf("Telekinesis")).toBeLessThan(body.indexOf("Rockfall"));
@@ -200,7 +200,7 @@ describe("compact graphical Game Log", () => {
     });
 
     it("renders a reciprocal linked Pounce once, with a single shared severity transition", () => {
-        const html = renderToString(() => createComponent(GameLogPanel, gameLogFixture));
+        const html = renderToString(() => createComponent(GameLogPanel, { ...gameLogFixture, style: "game" }));
         const rows = html.match(/<div[^>]+data-outcome="buff"[\s\S]*?(?=<\/article>)/g) ?? [];
         expect(rows.filter(row => text(row).includes("Pounce"))).toHaveLength(1);
         expect(text(html)).toContain("Ko-chan ↔ Skunkette APounce IV → I");

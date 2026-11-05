@@ -94,8 +94,8 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow enemy details 
         expect(getComputedStyle(heading.querySelector("h2")!).textTransform).toBe("uppercase");
         const logHeading = element(".kcq-battle-section--game-log .kcq-battle-section__heading");
         expect(logHeading.querySelector("h2")!.textContent).toBe("Game Log");
-        expect(logHeading.querySelectorAll('[role="tab"]')).toHaveLength(2);
-        expect(logHeading.querySelector('[role="tablist"] [role="tab"]')).not.toBeNull();
+        expect(logHeading.querySelectorAll('[role="tab"]')).toHaveLength(0);
+        expect(logHeading.querySelector("button")).toBeNull();
         logHeading.click();
         expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(element(".kcq-enemy-details__identity").textContent).toContain("Skunkette A");

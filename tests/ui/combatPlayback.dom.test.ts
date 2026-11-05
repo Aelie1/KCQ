@@ -214,7 +214,7 @@ describe("BattleApp playback integration", () => {
         expect(element(".kcq-battle-overview__primary-action").classList.contains("is-dimmed")).toBe(false);
         element(".kcq-battle-overview__secondary-action").click();
         const expected = createGameLogViewModel(createGameLogEntries(b.frames, b.initial), fixture.presentation, b.initial.characters.map(c => c.id));
-        expect([...document.querySelectorAll<HTMLElement>(".kcq-game-log__scroll [data-kind]")].map(e => e.dataset.kind)).toEqual(expected.map(e => e.kind));
+        expect([...element(".kcq-game-log__scroll").querySelectorAll<HTMLElement>("[data-kind]")].map(e => e.dataset.kind)).toEqual(expected.map(e => e.kind));
         for (const entry of expected) if (entry.title) expect(element(".kcq-game-log__scroll").textContent).toContain(entry.title);
         expect(b.engine.getGameState()).toEqual(b.final);
     });
@@ -351,7 +351,7 @@ describe("BattleApp playback integration", () => {
         expect(b.onCompletedOutcome).toHaveBeenCalledExactlyOnceWith(outcome);
         expect(element(".kcq-battle-stage__background").hasAttribute("inert")).toBe(true);
         element(".kcq-battle-result__log").click();
-        expect(document.querySelectorAll(".kcq-game-log__scroll [data-kind=move]")).toHaveLength(3);
+        expect(element(".kcq-game-log__scroll").querySelectorAll("[data-kind=move]")).toHaveLength(3);
         key(" "); expect(b.execute).toHaveBeenCalledOnce();
         expect(b.onCompletedOutcome).toHaveBeenCalledExactlyOnceWith(outcome);
     });

@@ -37,7 +37,7 @@ const entries = (event: GameEvent, before?: GameState, after?: GameState) =>
 const models = (event: GameEvent, before?: GameState, after?: GameState, presentation = p) =>
     createGameLogViewModel(entries(event, before, after), presentation, ["ko", "hinari"])[0]!;
 const render = (event: GameEvent, before?: GameState, after?: GameState, presentation = p) =>
-    renderToString(() => createComponent(GameLogPanel, { entries: entries(event, before, after), state: after ?? state(), presentation }));
+    renderToString(() => createComponent(GameLogPanel, { style: "game", entries: entries(event, before, after), state: after ?? state(), presentation }));
 const text = (html: string) => html.replace(/<[^>]*>/g, "");
 const count = (html: string, kind: string) => (html.match(new RegExp('data-outcome="' + kind + '"', "g")) ?? []).length;
 function collarFrame() {

@@ -107,7 +107,7 @@ describe("battle settings interactions", () => {
         expect(background.getAttribute("aria-hidden")).toBe("true");
         expect(document.activeElement).toBe(button("Resume", dialog));
         const controls = [...dialog.querySelectorAll("button, label, hr")];
-        expect(controls.map(control => control.tagName)).toEqual(["BUTTON", ...Array(8).fill("LABEL"), "BUTTON", "HR", "BUTTON", "BUTTON", "BUTTON"]);
+        expect(controls.map(control => control.tagName)).toEqual(["BUTTON", ...Array(10).fill("LABEL"), "BUTTON", "HR", "BUTTON", "BUTTON", "BUTTON"]);
         expect(button("Resume", dialog).classList.contains("kcq-battle-result__retry")).toBe(true);
         expect([...dialog.querySelectorAll("button")].map(control => control.textContent)).not.toContain(presentation.ui("library.title"));
         expect(dialog.querySelector("label")?.textContent).toContain("Language");
@@ -376,17 +376,21 @@ it("resets all preferences immediately and persistently without closing Settings
     change(".kcq-battle-settings__enemy-cards select", "compact");
     change(".kcq-battle-settings__binding-descriptions select", "on");
     change(".kcq-battle-settings__log-lines input", "8", "input");
+    change(".kcq-battle-settings__full-log-style select", "story");
+    change(".kcq-battle-settings__compact-log-style select", "story");
     change(".kcq-battle-settings__playback-speed select", "slow");
     change(".kcq-battle-settings__shortcut-hints select", "always");
     change(".kcq-battle-settings__theme select", "light");
     expect(document.documentElement.dataset.kcqTheme).toBe("light");
-    const keys = ["language", "battleColumns", "enemyCards", "bindingDescriptions", "overviewGameLogLines", "playbackSpeed", "keyboardShortcutHints", "theme"];
+    const keys = ["language", "battleColumns", "enemyCards", "bindingDescriptions", "overviewGameLogLines", "playbackSpeed", "keyboardShortcutHints", "theme", "fullLogStyle", "compactLogStyle"];
     const unrelated = Object.fromEntries(Object.keys(window.localStorage).filter(key => !keys.includes(key.replace(/^kcq\./, "")))
         .map(key => [key, window.localStorage.getItem(key)]));
     button("Reset to Defaults", dialog).click();
     expect(document.querySelector('[role="dialog"]')).toBe(dialog);
     expect(button("Resume", dialog)).toBeDefined();
     expect(dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__theme select")?.value).toBe("dark");
+    expect(dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__full-log-style select")?.value).toBe("both");
+    expect(dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__compact-log-style select")?.value).toBe("game");
     expect(document.documentElement.dataset.kcqTheme).toBe("dark");
     expect(dialog.querySelector<HTMLSelectElement>("select")?.value).toBe("en");
     expect(dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__columns select")?.value).toBe("auto");
@@ -396,7 +400,7 @@ it("resets all preferences immediately and persistently without closing Settings
     expect(dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__shortcut-hints select")?.value).toBe("temporary");
     expect(document.querySelector(".kcq-battle-stage")?.getAttribute("data-kcq-hints-visible")).toBe("false");
     expect(keys.map(key => window.localStorage.getItem(`kcq.${key}`)))
-        .toEqual(["en", "auto", "auto", "auto", "3", "normal", "temporary", "dark"]);
+        .toEqual(["en", "auto", "auto", "auto", "3", "normal", "temporary", "dark", "both", "game"]);
     for (const [key, value] of Object.entries(unrelated)) expect(window.localStorage.getItem(key)).toBe(value);
     expect(execute).not.toHaveBeenCalled(); expect(engine.getGameState()).toEqual(before);
     expect(prepareBattle).toHaveBeenCalledOnce(); expect(sessions[0]!.dispose).not.toHaveBeenCalled();

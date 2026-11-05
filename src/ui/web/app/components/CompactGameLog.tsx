@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, createUniqueId, For, on, onCleanup, onMount, Show, type JSX } from "solid-js";
+import { createEffect, createMemo, createSignal, createUniqueId, For, onCleanup, onMount, Show, type JSX } from "solid-js";
 import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { ContentLibrary } from "../../../../engine/public/library";
 import type { Presentation } from "../../../presentation/presentation";
@@ -7,7 +7,8 @@ import { latestGameLogActionIndex, mergeLogLines, recentGameLogEntries, recentLo
 import { GameLogEntry } from "./GameLogEntry";
 import { StoryLogEntry } from "./StoryLogEntry";
 import { createStoryLogViewModel } from "../viewModels/storyLog";
-import { GameLogTabs, type GameLogMode } from "./GameLogTabs";
+import type { CompactLogStyle, FullLogStyle } from "../gameLogMode";
+import { FullGameLog } from "./FullGameLog";
 
 export interface CompactGameLogProps {
     entries: readonly GameLogPresentationEntry[];
@@ -18,69 +19,14 @@ export interface CompactGameLogProps {
     onOpen?: () => void;
     headingAction?: boolean;
     scrollable?: boolean;
-    mode?: GameLogMode;
-    onModeChange?: (mode: GameLogMode) => void;
-}
-
-/** The wide overview has room for history rather than a cropped preview. */
-function ScrollableGameLog(props: CompactGameLogProps & { headingId: string }): JSX.Element {
-    const entries = createMemo(() => createGameLogViewModel(props.entries, props.presentation, props.party));
-    const [tab, setTab] = createSignal<GameLogMode>(props.mode ?? "combat");
-    const story = createMemo(() => tab() === "story" ? createStoryLogViewModel(props.entries, props.presentation, props.party, props.library) : []);
-    const positions = { combat: { top: 0, following: true }, story: { top: 0, following: true } };
-    let viewport!: HTMLDivElement;
-    let following = true;
-    let restoreTop: number | undefined;
-    let frame: number | undefined;
-    let previousCount = props.entries.length;
-    const selectTab = (next: GameLogMode) => {
-        if (next === tab()) return;
-        positions[tab()] = { top: viewport.scrollTop, following };
-        following = positions[next].following;
-        restoreTop = positions[next].top;
-        setTab(next);
-        props.onModeChange?.(next);
-        viewport.scrollTop = following ? Math.max(0, viewport.scrollHeight - viewport.clientHeight) : positions[next].top;
-    };
-    createEffect(on(() => props.mode, mode => { if (mode !== undefined) selectTab(mode); }));
-    createEffect(() => {
-        entries();
-        story();
-        tab();
-        if (!props.entries.length && previousCount) {
-            following = true;
-            restoreTop = undefined;
-            positions.combat = { top: 0, following: true };
-            positions.story = { top: 0, following: true };
-        }
-        previousCount = props.entries.length;
-        if (frame !== undefined) cancelAnimationFrame(frame);
-        frame = requestAnimationFrame(() => {
-            frame = undefined;
-            if (following) viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
-            else if (restoreTop !== undefined) viewport.scrollTop = restoreTop;
-            restoreTop = undefined;
-        });
-    });
-    onCleanup(() => { if (frame !== undefined) cancelAnimationFrame(frame); });
-    return <>
-        <GameLogTabs id={props.headingId} headingId={props.headingId} mode={tab()} onSelect={selectTab} presentation={props.presentation} />
-        <div class="kcq-overview-game-log-panel" role="tabpanel" id={`${props.headingId}-panel`} aria-labelledby={`${props.headingId}-${tab()}`}>
-            <div ref={viewport} class="kcq-game-log__scroll kcq-overview-game-log-history" role="log" tabIndex={0}
-                aria-label={props.presentation.ui("gameLog.chronological")}
-                onScroll={() => { following = viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= 32; restoreTop = undefined; }}>
-                <Show when={entries().length} fallback={<p class="kcq-game-log__empty">{props.presentation.ui("gameLog.empty")}</p>}>
-                    <Show when={tab() === "combat"} fallback={<For each={story()}>{entry => <StoryLogEntry entry={entry} />}</For>}>
-                        <For each={entries()}>{entry => <GameLogEntry entry={entry} />}</For>
-                    </Show>
-                </Show>
-            </div>
-        </div>
-    </>;
+    style?: CompactLogStyle;
+    fullStyle?: FullLogStyle;
+    encounterId?: string;
+    round?: number;
 }
 
 function MeasuredGameLog(props: CompactGameLogProps): JSX.Element {
-    const entries = createMemo(() => props.lines <= 0 ? [] : props.mode === "story"
+    const entries = createMemo(() => props.lines <= 0 ? [] : props.style === "story"
         ? createStoryLogViewModel(props.entries, props.presentation, props.party, props.library).filter(entry => entry.kind !== "phase" && (entry.title || entry.paragraphs.length)).slice(-props.lines)
         : recentGameLogEntries(createGameLogViewModel(props.entries, props.presentation, props.party), props.lines));
     const [offset, setOffset] = createSignal(0);
@@ -154,20 +100,14 @@ function MeasuredGameLog(props: CompactGameLogProps): JSX.Element {
 
 export function CompactGameLog(props: CompactGameLogProps): JSX.Element {
     const headingId = createUniqueId();
-    const [localMode, setLocalMode] = createSignal<GameLogMode>("combat");
-    const mode = () => props.mode ?? localMode();
-    const selectMode = (next: GameLogMode) => { setLocalMode(next); props.onModeChange?.(next); };
     return <Show when={props.lines > 0 || props.headingAction || props.scrollable}>
         <section class="kcq-battle-section kcq-battle-section--game-log" aria-labelledby={headingId}>
-            <Show when={props.scrollable} fallback={<>
-                <GameLogTabs id={headingId} headingId={headingId} mode={mode()} onSelect={selectMode} presentation={props.presentation} />
-                <Show when={props.lines > 0}>
-                    <div role="tabpanel" id={`${headingId}-panel`} aria-labelledby={`${headingId}-${mode()}`}>
-                        <MeasuredGameLog {...props} mode={mode()} />
-                    </div>
-                </Show>
-            </>}>
-                <ScrollableGameLog {...props} headingId={headingId} mode={mode()} onModeChange={selectMode} />
+            <header class="kcq-battle-section__heading">
+                <h2 id={headingId}>{props.presentation.ui("combatHeader.gameLog")}</h2>
+            </header>
+            <Show when={props.scrollable} fallback={<Show when={props.lines > 0}><MeasuredGameLog {...props} /></Show>}>
+                <FullGameLog entries={props.entries} presentation={props.presentation} library={props.library} party={props.party}
+                    style={props.fullStyle} encounterId={props.encounterId} round={props.round} />
             </Show>
         </section>
     </Show>;

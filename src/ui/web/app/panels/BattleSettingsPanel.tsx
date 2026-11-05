@@ -2,6 +2,7 @@ import { createUniqueId, For, onCleanup, onMount, Show, type JSX } from "solid-j
 import { Portal } from "solid-js/web";
 import type { Presentation } from "../../../presentation/presentation";
 import type { LanguageSelection } from "../language";
+import type { CompactLogStyle, FullLogStyle, LogStylePreferences } from "../gameLogMode";
 import type { OverviewGameLogPreference } from "../overviewGameLogLines";
 import { PLAYBACK_INTERVALS, type PlaybackSpeed, type PlaybackSpeedPreference } from "../playbackSpeed";
 import { resetPreferences } from "../resetPreferences";
@@ -17,6 +18,7 @@ export function BattleSettingsPanel(props: {
     language?: LanguageSelection;
     theme?: ThemePreference;
     overviewGameLog?: OverviewGameLogPreference;
+    logStyles?: LogStylePreferences;
     shortcutHints?: ShortcutHintPreference;
     playbackSpeed?: PlaybackSpeedPreference;
     viewPreferences?: ViewPreferences;
@@ -137,6 +139,26 @@ export function BattleSettingsPanel(props: {
                             onChange={event => props.shortcutHints?.onChange(event.currentTarget.value as ShortcutHintMode)}>
                             <option value="always">{props.presentation.ui("battleSettings.shortcutHintsAlways")}</option>
                             <option value="temporary">{props.presentation.ui("battleSettings.shortcutHintsTemporary")}</option>
+                        </select>
+                    </label>
+                </Show>
+                <Show when={props.logStyles}>
+                    <label class="kcq-battle-settings__option kcq-battle-settings__full-log-style">
+                        <span>{props.presentation.ui("battleSettings.fullLogStyle")}</span>
+                        <select value={props.logStyles?.full}
+                            onChange={event => props.logStyles?.setFull(event.currentTarget.value as FullLogStyle)}>
+                            <For each={["game", "story", "both"] as const}>
+                                {style => <option value={style}>{props.presentation.ui(`battleSettings.logStyle.${style}`)}</option>}
+                            </For>
+                        </select>
+                    </label>
+                    <label class="kcq-battle-settings__option kcq-battle-settings__compact-log-style">
+                        <span>{props.presentation.ui("battleSettings.compactLogStyle")}</span>
+                        <select value={props.logStyles?.compact}
+                            onChange={event => props.logStyles?.setCompact(event.currentTarget.value as CompactLogStyle)}>
+                            <For each={["game", "story"] as const}>
+                                {style => <option value={style}>{props.presentation.ui(`battleSettings.logStyle.${style}`)}</option>}
+                            </For>
                         </select>
                     </label>
                 </Show>

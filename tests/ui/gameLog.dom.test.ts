@@ -8,6 +8,7 @@ import { createGameLogEntries, type GameLogPresentationEntry } from "../../src/u
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
+import type { FullLogStyle } from "../../src/ui/web/app/gameLogMode";
 import { GameLogPanel } from "../../src/ui/web/app/panels/GameLogPanel";
 import { createGameLogViewModel } from "../../src/ui/web/app/viewModels/gameLog";
 import { stockStrings } from "../helpers/stockStrings";
@@ -90,7 +91,7 @@ function useTelekinesis(): void {
     click("button.kcq-target-card");
 }
 function logEntries(): HTMLElement[] {
-    return [...document.querySelectorAll<HTMLElement>(".kcq-game-log__entry")];
+    return [...(document.querySelector(".kcq-game-log__scroll") ?? document).querySelectorAll<HTMLElement>(".kcq-game-log__entry")];
 }
 function expectHistory(results: readonly ActionResult[], initial: GameState): void {
     const expected = createGameLogViewModel(createGameLogEntries(results.flatMap(result => result.success ? result.frames : []), initial), presentation, initial.characters.map(character => character.id));
@@ -229,7 +230,7 @@ describe("live graphical Game Log history", () => {
         expect(logEntries()).toHaveLength(count);
         expect(document.querySelector(".kcq-game-log__scroll")?.textContent).toContain("Translated move");
         expect(document.querySelector(".kcq-game-log__scroll")?.textContent).toContain("Translated actor");
-        expect(document.querySelector(".kcq-game-log__scroll")?.getAttribute("aria-label")).toBe("Translated history");
+        expect(document.querySelector(".kcq-full-game-log__viewport")?.getAttribute("aria-label")).toBe("Translated history");
         expect(execute).toHaveBeenCalledTimes(1);
         expect(prepareBattle).toHaveBeenCalledTimes(1);
     });
@@ -284,7 +285,7 @@ describe("live graphical Game Log history", () => {
 });
 
 
-function mountScrollingLog() {
+function mountScrollingLog(initialStyle: FullLogStyle = "game") {
     let nextFrame = 0;
     const pending = new Map<number, FrameRequestCallback>();
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { pending.set(++nextFrame, callback); return nextFrame; });
@@ -301,12 +302,13 @@ function mountScrollingLog() {
     const [entries, setEntries] = createSignal<GameLogPresentationEntry[]>([entry(1), entry(2)]);
     const [state, setState] = createSignal(createStockEngine().getGameState());
     const [language, setLanguage] = createSignal(presentation);
+    const [style, setStyle] = createSignal(initialStyle);
     const host = document.createElement("div");
     document.body.append(host);
     unmount = render(() => createComponent(GameLogPanel, {
-        get entries() { return entries(); }, get state() { return state(); }, get presentation() { return language(); },
+        get entries() { return entries(); }, get state() { return state(); }, get presentation() { return language(); }, get style() { return style(); },
     }), host);
-    const viewport = host.querySelector<HTMLElement>(".kcq-screen-layout__body")!;
+    const viewport = host.querySelector<HTMLElement>(".kcq-full-game-log__viewport")!;
     let height = 1000;
     let client = 200;
     Object.defineProperties(viewport, {
@@ -316,7 +318,7 @@ function mountScrollingLog() {
     const scroll = (top: number) => { viewport.scrollTop = top; viewport.dispatchEvent(new Event("scroll")); };
     const append = () => { height += 100; setEntries(previous => [...previous, entry(previous.length + 1)]); };
     return {
-        viewport, flush, scroll, append, resize: () => resize(), setEntries, entry, setState, state, setLanguage, disconnect, observe,
+        host, setStyle, viewport, flush, scroll, append, resize: () => resize(), setEntries, entry, setState, state, setLanguage, disconnect, observe,
         setHeight: (value: number) => { height = value; }, setClient: (value: number) => { client = value; }, pending
     };
 }
@@ -530,122 +532,88 @@ describe("Game Log bottom following", () => {
     });
 });
 
-describe("Combat and Story tabs", () => {
-    it("defaults to Combat and switches presentation without mutating the battle or mechanical rows", () => {
-        const log = mountScrollingLog();
+describe("full log styles", () => {
+    it("renders Game, Story, and Both without tabs or battle state changes", () => {
+        const log = mountScrollingLog("both");
         log.setEntries(createGameLogEntries([{
             type: "useMove", actor: "ko", move: "telekinesis", effects: [], targets: [
                 { target: "skunkette1", result: "hit", effects: [{ type: "enemyDamaged", target: "skunkette1", amount: 10 }] },
             ]
         }]));
         const saved = JSON.stringify(log.state());
-        const combat = log.viewport.querySelector('.kcq-game-log__scroll')!.innerHTML;
-        expect(button("Combat").getAttribute("aria-selected")).toBe("true");
-        button("Story").click();
-        expect(button("Story").getAttribute("aria-selected")).toBe("true");
-        expect(log.viewport.textContent).toContain("Ko-chan launches a rock at Skunkette A");
-        expect(log.viewport.textContent).toContain("gets a clean hit");
-        expect(log.viewport.querySelector('[data-outcome]')).toBeNull();
-        button("Combat").click();
-        expect(log.viewport.querySelector('.kcq-game-log__scroll')!.innerHTML).toBe(combat);
+        const panels = () => [...log.host.querySelectorAll<HTMLElement>('[role="log"]')];
+        expect(panels()).toHaveLength(2);
+        expect([...log.host.querySelectorAll("h2")].map(h => h.textContent)).toEqual(["Game Log", "Story Log"]);
+        expect(panels()[0]!.querySelector("[data-outcome]")).not.toBeNull();
+        expect(panels()[1]!.textContent).toContain("Ko-chan launches a rock at Skunkette A");
+        expect(panels()[1]!.querySelector("[data-outcome]")).toBeNull();
+        const mechanical = panels()[0]!.innerHTML;
+        log.setStyle("story");
+        expect(panels()).toHaveLength(1);
+        expect(panels()[0]!.querySelector(".kcq-game-log__story-text")).not.toBeNull();
+        log.setStyle("game");
+        expect(panels()).toHaveLength(1);
+        expect(panels()[0]!.innerHTML).toBe(mechanical);
+        expect(log.host.querySelector('[role="tab"], [role="tablist"], [role="tabpanel"]')).toBeNull();
         expect(JSON.stringify(log.state())).toBe(saved);
     });
-
-    it("supports roving keyboard focus and associates the active panel and tab", () => {
-        const log = mountScrollingLog();
-        button("Combat").focus();
-        button("Combat").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
-        expect(document.activeElement).toBe(button("Story"));
-        expect(button("Story").tabIndex).toBe(0);
-        expect(button("Combat").tabIndex).toBe(-1);
-        const panel = log.viewport.querySelector('[role="tabpanel"]')!;
-        expect(panel.getAttribute("aria-labelledby")).toBe(button("Story").id);
-        expect(button("Story").getAttribute("aria-controls")).toBe(panel.id);
-        button("Story").dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true, cancelable: true }));
-        expect(document.activeElement).toBe(button("Combat"));
-        button("Combat").dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true, cancelable: true }));
-        expect(document.activeElement).toBe(button("Story"));
-    });
-
-    it("keeps independent scrollback and auto-follow for each tab as history grows", () => {
-        const log = mountScrollingLog();
-        log.flush(); log.scroll(140);
-        button("Story").click(); log.flush();
-        expect(log.viewport.scrollTop).toBe(800);
-        log.append(); log.flush();
-        expect(log.viewport.scrollTop).toBe(900);
-        log.scroll(260);
-        button("Combat").click(); log.flush();
-        expect(log.viewport.scrollTop).toBe(140);
-        log.append(); log.flush();
-        expect(log.viewport.scrollTop).toBe(140);
-        button("Story").click(); log.flush();
-        expect(log.viewport.scrollTop).toBe(260);
-        log.scroll(1000); log.append(); log.flush();
-        expect(log.viewport.scrollTop).toBe(1100);
-    });
-
-    it("updates and relocalizes Story while selected, and clears both tab positions for a new battle", () => {
-        const log = mountScrollingLog();
-        button("Story").click(); log.flush();
-        log.append();
-        // Empty phases stay hidden; give each phase an authored consequence.
-        log.setEntries(entries => entries.map(entry => ({ ...entry, outcomes: [
-            { kind: "character", target: "ko", operation: "rescued" },
-        ] })));
-        expect(log.viewport.querySelectorAll('[data-kind="phase"]')).toHaveLength(3);
-        log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.story": "Story translated", "character.narrative.rescued": "A new rescue passage." }));
-        expect(button("Story translated").getAttribute("aria-selected")).toBe("true");
-        expect(log.viewport.textContent).toContain("A new rescue passage.");
-        log.scroll(100);
-        log.setEntries([]); log.setHeight(0); log.flush();
-        expect(log.viewport.textContent).toContain("No combat events yet.");
-        log.setHeight(900); log.setEntries([log.entry(1)]); log.flush();
-        expect(log.viewport.scrollTop).toBe(700);
-        button("Combat").click(); log.flush();
-        expect(log.viewport.scrollTop).toBe(700);
-    });
-
-    it("keeps the selected Story presentation when returning to the overview", () => {
-        const { engine } = mountBattle();
-        useTelekinesis();
-        const state = JSON.stringify(engine.getGameState());
-        const preview = document.querySelector<HTMLButtonElement>('.kcq-compact-game-log')!;
-        const mechanical = preview.textContent;
-        preview.click(); button("Story").click();
-        expect(document.querySelector('.kcq-game-log__story-text')).not.toBeNull();
-        click('.kcq-combat-header__back');
-        expect(document.querySelector('.kcq-compact-game-log')!.textContent).not.toBe(mechanical);
-        expect(document.querySelector('.kcq-compact-game-log .kcq-game-log__story-text')).not.toBeNull();
-        expect(JSON.stringify(engine.getGameState())).toBe(state);
+    it("independently follows both logs, preserves scrollback, and cancels both queued updates", () => {
+        const log = mountScrollingLog("both");
+        const story = log.host.querySelectorAll<HTMLElement>('[role="log"]')[1]!;
+        let storyHeight = 1200;
+        Object.defineProperties(story, { scrollHeight: { get: () => storyHeight }, clientHeight: { value: 200 } });
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(800); expect(story.scrollTop).toBe(1000);
+        log.scroll(140);
+        storyHeight += 100; log.append(); log.flush();
+        expect(log.viewport.scrollTop).toBe(140); expect(story.scrollTop).toBe(1100);
+        story.scrollTop = 260; story.dispatchEvent(new Event("scroll"));
+        log.scroll(900);
+        storyHeight += 100; log.append(); log.flush();
+        expect(log.viewport.scrollTop).toBe(1000); expect(story.scrollTop).toBe(260);
+        log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.storyLog": "Translated Story" }));
+        log.flush();
+        expect(story.scrollTop).toBe(260);
+        expect(story.getAttribute("aria-label")).toBe("Translated Story");
+        log.setEntries([]); log.setHeight(0); storyHeight = 0; log.flush();
+        expect(log.viewport.scrollTop).toBe(0); expect(story.scrollTop).toBe(0);
+        log.append(); expect(log.pending.size).toBe(2);
+        unmount!(); unmount = undefined;
+        expect(log.pending.size).toBe(0); expect(log.disconnect).toHaveBeenCalledTimes(2);
     });
 });
-
-describe("persistent Game Log selection across battles", () => {
-    it.each(["story", "combat"] as const)("restores %s across shared presentations, another battle, and app recreation", mode => {
-        window.localStorage.setItem("kcq.gameLogMode", mode === "story" ? "combat" : "story");
-        mountBattle();
-        document.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!.click();
-        button(mode === "story" ? "Story" : "Combat").click();
-        expect(window.localStorage.getItem("kcq.gameLogMode")).toBe(mode);
-        click(".kcq-combat-header__back");
-        const selected = () => document.querySelector<HTMLButtonElement>('.kcq-overview-game-log-tabs [aria-selected="true"]')!;
-        expect(selected().textContent).toBe(mode === "story" ? "Story Log" : "Game Log");
+describe("independent log styles through Settings", () => {
+    it("applies preferences across navigation, another encounter, and app recreation", () => {
+        mountBattle(); useTelekinesis();
         click(".kcq-combat-header__settings");
-        button("Back to Level Select").click();
+        const change = (kind: string, value: string) => {
+            const select = document.querySelector<HTMLSelectElement>(`.kcq-battle-settings__${kind}-log-style select`)!;
+            select.value = value; select.dispatchEvent(new Event("change", { bubbles: true }));
+        };
+        change("full", "game"); change("compact", "story");
+        expect(window.localStorage.getItem("kcq.fullLogStyle")).toBe("game");
+        expect(window.localStorage.getItem("kcq.compactLogStyle")).toBe("story");
+        button("Resume").click();
+        expect(document.querySelector(".kcq-compact-game-log .kcq-game-log__story-text")).not.toBeNull();
+        click(".kcq-compact-game-log");
+        expect(document.querySelectorAll('[role="log"]')).toHaveLength(1);
+        expect(document.querySelector(".kcq-game-log__story-text")).toBeNull();
+        click(".kcq-combat-header__back");
+        click(".kcq-combat-header__settings"); button("Back to Level Select").click();
         document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.click();
         chooseEncounter("plains_2");
-        expect(selected().textContent).toBe(mode === "story" ? "Story Log" : "Game Log");
-        document.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!.click();
-        expect(button(mode === "story" ? "Story" : "Combat").getAttribute("aria-selected")).toBe("true");
+        click(".kcq-combat-header__settings");
+        expect(document.querySelector<HTMLSelectElement>(".kcq-battle-settings__full-log-style select")!.value).toBe("game");
+        expect(document.querySelector<HTMLSelectElement>(".kcq-battle-settings__compact-log-style select")!.value).toBe("story");
+        button("Resume").click();
         unmount?.(); unmount = undefined; document.body.replaceChildren();
         mountBattle();
-        expect(selected().textContent).toBe(mode === "story" ? "Story Log" : "Game Log");
-        document.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!.click();
-        expect(button(mode === "story" ? "Story" : "Combat").getAttribute("aria-selected")).toBe("true");
-        click(".kcq-combat-header__back");
         click(".kcq-combat-header__settings");
-        button("Back to Level Select").click();
-        expect(document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.checked).toBe(true);
+        expect(document.querySelector<HTMLSelectElement>(".kcq-battle-settings__full-log-style select")!.value).toBe("game");
+        expect(document.querySelector<HTMLSelectElement>(".kcq-battle-settings__compact-log-style select")!.value).toBe("story");
+        button("Reset to Defaults").click(); button("Resume").click();
+        useTelekinesis();
+        expect(document.querySelector(".kcq-compact-game-log .kcq-game-log__story-text")).toBeNull();
+        click(".kcq-compact-game-log"); expect(document.querySelectorAll('[role="log"]')).toHaveLength(2);
     });
 });

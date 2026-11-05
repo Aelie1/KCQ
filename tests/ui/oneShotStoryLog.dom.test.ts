@@ -31,13 +31,13 @@ describe("one-time Story Log rendering", () => {
         });
         const library = createCharacterLibrary();
         const host = document.createElement("div"); document.body.append(host);
-        const [mode, setMode] = createSignal<"combat" | "story">("story");
+        const [mode, setMode] = createSignal<"game" | "story">("story");
         if (kind === "full") {
             const engine = createStockEngine(); createBattle(engine, "plains_1", "standard");
-            unmount = render(() => createComponent(GameLogPanel, { entries, presentation, library, get mode() { return mode(); }, onModeChange: setMode, state: engine.getGameState() }), host);
+            unmount = render(() => createComponent(GameLogPanel, { entries, presentation, library, get style() { return mode(); }, get fullStyle() { return mode(); }, state: engine.getGameState() }), host);
         } else {
             unmount = render(() => createComponent(CompactGameLog, {
-                entries, presentation, library, get mode() { return mode(); }, onModeChange: setMode, party: ["ko", "matsuko", "hinari"], lines: 8, scrollable: kind === "wide",
+                entries, presentation, library, get style() { return mode(); }, get fullStyle() { return mode(); }, party: ["ko", "matsuko", "hinari"], lines: 8, scrollable: kind === "wide",
             }), host);
         }
         const glows = [...host.querySelectorAll<HTMLElement>(".kcq-game-log__one-shot")];
@@ -46,7 +46,7 @@ describe("one-time Story Log rendering", () => {
             .toEqual(["var(--kcq-name-ko)", "var(--kcq-name-matsuko)"]);
         expect([...host.querySelectorAll("p.kcq-game-log__story-text")].map(p => p.textContent))
             .toEqual(["Denial prose.", "Unrelated effect.", "Immolation prose.", "Ordinary prose."]);
-        host.querySelector<HTMLButtonElement>('[role="tab"]')!.click();
+        setMode("game");
         expect(host.querySelector(".kcq-game-log__one-shot")).toBeNull();
         expect(host.querySelector(".kcq-game-log__story-text")).toBeNull();
         expect(host.querySelector("[data-outcome]")).not.toBeNull();

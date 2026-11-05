@@ -11,7 +11,7 @@ import type { Presentation } from "../../../presentation/presentation";
 import { CombatHeader } from "../components/CombatHeader";
 import { CompactGameLog } from "../components/CompactGameLog";
 import { EnemyCard } from "../components/EnemyCard";
-import type { GameLogMode } from "../components/GameLogTabs";
+import type { CompactLogStyle, FullLogStyle } from "../gameLogMode";
 import { PartyCard } from "../components/PartyCard";
 import { ScreenLayout } from "../components/ScreenLayout";
 import { Shortcut } from "../components/Shortcut";
@@ -49,8 +49,8 @@ export interface BattleOverviewPanelProps {
     onLibrary?: () => void;
     onEndTurn?: () => void;
     onGameLog?: () => void;
-    gameLogMode?: GameLogMode;
-    onGameLogModeChange?: (mode: GameLogMode) => void;
+    compactLogStyle?: CompactLogStyle;
+    fullLogStyle?: FullLogStyle;
     onSelectEnemy?: (id: EntityId) => void;
     onSelectCharacter?: (id: EntityId) => void;
 }
@@ -113,7 +113,8 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                         headingAction={props.gameLogHeadingAction}
                         scrollable={props.gameLogScrollable}
                         lines={props.gameLogLines ?? DEFAULT_OVERVIEW_GAME_LOG_LINES} onOpen={props.onGameLog}
-                        mode={props.gameLogMode} onModeChange={props.onGameLogModeChange} />
+                        style={props.compactLogStyle} fullStyle={props.fullLogStyle}
+                        encounterId={props.state.encounter?.id} round={props.state.turn.round} />
                 </Show>
                 <Show when={visible("enemies") && props.enemyDetails}>{details => details()}</Show>
                 <Show when={visible("enemies") && !props.enemyDetails}>

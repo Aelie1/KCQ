@@ -14,6 +14,7 @@ import { TitleScreen } from "./components/TitleScreen";
 import { createGraphicalController, type GraphicalBattleSession } from "./graphicalController";
 import { useCombatKeyboard, type SharedKeyboard } from "./keyboard";
 import { loadLanguage, saveLanguage, type LanguageOption } from "./language";
+import { createLogStylePreferences } from "./gameLogMode";
 import { createOverviewGameLogPreference } from "./overviewGameLogLines";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import { LibraryPanel } from "./panels/LibraryPanel";
@@ -52,6 +53,7 @@ export interface GraphicalAppProps {
 export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
     const theme = createThemePreference();
     const overviewGameLog = createOverviewGameLogPreference();
+    const logStyles = createLogStylePreferences();
     const shortcutHints = createShortcutHintPreference();
     const playbackSpeed = createPlaybackSpeedPreference();
     const viewPreferences = createViewPreferences();
@@ -242,7 +244,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                     {(current) => <BattleApp engine={current.session.engine} presentation={presentation()}
                         saved={current.session.saved}
                         campaign={current.campaign} onNextLevel={nextLevel}
-                        language={languageSelection} theme={theme} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences} keyboard={keyboard} release={props.release}
+                        language={languageSelection} theme={theme} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} logStyles={logStyles} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences} keyboard={keyboard} release={props.release}
                         observer={current.session.observer} onOutcome={controller.recordOutcome} onRetry={controller.retryEncounter}
                         onBackToLevelSelect={backToLevelSelect} onBackToTitle={backToTitle} />}
                 </Match>
@@ -260,7 +262,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
             />}
         </Show>
         <Show when={settingsOpen() && !libraryOpen()}>
-            <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} theme={theme} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences}
+            <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} theme={theme} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} logStyles={logStyles} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences}
                 returnFocus={settingsTrigger} showBattleActions={false} onResume={() => setSettingsOpen(false)}
                 onBackToTitle={backToTitle} />
         </Show>

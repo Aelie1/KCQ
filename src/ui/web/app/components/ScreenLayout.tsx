@@ -8,20 +8,22 @@ export interface ScreenLayoutProps {
     ariaLabel?: string;
 }
 
-/** A viewport-sized screen whose middle row owns all content scrolling. */
+/** A viewport-sized screen with a constrained middle row for scrollable content. */
 export function ScreenLayout(props: ScreenLayoutProps): JSX.Element {
+    // Reuse each Show value: reading a JSX prop again can construct a second tree
+    // with detached components and duplicate effects (including log observers).
     return (
         <section class={`kcq-screen-layout${props.class ? ` ${props.class}` : ""}`} aria-label={props.ariaLabel}>
             <Show when={props.header}>
-                <div class="kcq-screen-layout__header">{props.header}</div>
+                {header => <div class="kcq-screen-layout__header">{header()}</div>}
             </Show>
             <Show when={props.body}>
-                <div class="kcq-screen-layout__body">
-                    <div class="kcq-screen-layout__content">{props.body}</div>
-                </div>
+                {body => <div class="kcq-screen-layout__body">
+                    <div class="kcq-screen-layout__content">{body()}</div>
+                </div>}
             </Show>
             <Show when={props.footer}>
-                <div class="kcq-screen-layout__footer">{props.footer}</div>
+                {footer => <div class="kcq-screen-layout__footer">{footer()}</div>}
             </Show>
         </section>
     );
