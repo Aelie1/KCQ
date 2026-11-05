@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createUniqueId, For, onCleanup, onMount, Show, type JSX } from "solid-js";
+import { createEffect, createMemo, For, onCleanup, onMount, Show, type JSX } from "solid-js";
 import type { ContentLibrary } from "../../../../engine/public/library";
 import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
@@ -21,11 +21,9 @@ export interface FullGameLogProps {
 
 function LogHistory(props: FullGameLogProps & {
     kind: CompactLogStyle;
-    headings: boolean;
     rounds: readonly GameLogRound[];
     scroll: ReturnType<typeof createGameLogScroll>;
 }): JSX.Element {
-    const id = createUniqueId();
     const label = () => props.presentation.ui(props.kind === "game" ? "combatHeader.gameLog" : "gameLog.storyLog");
     const rounds = createMemo(() => new Map(props.rounds.map(group => [group.round,
         props.kind === "game" ? createGameLogViewModel(group.entries, props.presentation, props.party)
@@ -41,10 +39,8 @@ function LogHistory(props: FullGameLogProps & {
         onCleanup(props.scroll.register(props.kind, viewport, content));
     });
     return <section class="kcq-full-game-log__panel" aria-label={label()}>
-        <Show when={props.headings}><h2 id={id} class="kcq-full-game-log__heading">{label()}</h2></Show>
         <div ref={viewport} class="kcq-full-game-log__viewport" role="log" tabIndex={0}
-            aria-label={props.kind === "story" ? label() : props.presentation.ui("gameLog.chronological")}
-            aria-labelledby={props.headings ? id : undefined}>
+            aria-label={props.kind === "story" ? label() : props.presentation.ui("gameLog.chronological")}>
             <div ref={content} class="kcq-game-log__scroll">
                 <Show when={[...rounds().values()].some(entries => entries.length)} fallback={<p class="kcq-game-log__empty">{props.presentation.ui("gameLog.empty")}</p>}>
                     <For each={[...rounds().keys()]}>{round => <div data-log-round={round}>
@@ -79,7 +75,7 @@ export function FullGameLog(props: FullGameLogProps): JSX.Element {
     });
     onCleanup(() => scroll.dispose());
     return <div class="kcq-full-game-log" classList={{ "kcq-full-game-log--both": style() === "both" }}>
-        <Show when={style() !== "story"}><LogHistory {...props} kind="game" headings={style() === "both"} rounds={rounds()} scroll={scroll} /></Show>
-        <Show when={style() !== "game"}><LogHistory {...props} kind="story" headings={style() === "both"} rounds={rounds()} scroll={scroll} /></Show>
+        <Show when={style() !== "story"}><LogHistory {...props} kind="game" rounds={rounds()} scroll={scroll} /></Show>
+        <Show when={style() !== "game"}><LogHistory {...props} kind="story" rounds={rounds()} scroll={scroll} /></Show>
     </div>;
 }

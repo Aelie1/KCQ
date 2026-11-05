@@ -1758,6 +1758,7 @@ button {
 
 .kcq-full-game-log--both {
     grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 8px;
 }
 
 .kcq-full-game-log__panel {
@@ -1766,19 +1767,9 @@ button {
     min-height: 0;
     min-width: 0;
     overflow: hidden;
+    border: 1px solid var(--kcq-structure-border-strong);
+    border-radius: 12px;
     background: var(--kcq-surface-card);
-}
-
-.kcq-full-game-log__panel + .kcq-full-game-log__panel {
-    border-top: 1px solid var(--kcq-structure-border);
-}
-
-.kcq-full-game-log__heading {
-    flex: 0 0 auto;
-    margin: 0;
-    padding: 6px 12px;
-    font-size: 10px;
-    text-transform: uppercase;
 }
 
 .kcq-full-game-log__viewport {

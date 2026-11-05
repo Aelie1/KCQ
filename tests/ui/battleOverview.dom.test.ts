@@ -595,7 +595,9 @@ it.each([390, 1024, 1920])("applies every full style to ongoing and completed ba
             expect(getComputedStyle(panel).overflowY).toBe("auto");
             expect(getComputedStyle(panel).minHeight).toBe("0");
             expect(panel.tabIndex).toBe(0);
-            if (style === "both") expect(document.getElementById(panel.getAttribute("aria-labelledby")!)).not.toBeNull();
+            expect(panel.getAttribute("aria-label")).toBeTruthy();
+            expect(panel.closest("section")!.querySelector("h2")).toBeNull();
+            expect(getComputedStyle(panel.closest("section")!).borderRadius).toBe("12px");
         }
         unmount?.(); unmount = undefined; document.body.replaceChildren();
     }

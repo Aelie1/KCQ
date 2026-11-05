@@ -547,7 +547,8 @@ describe("full log styles", () => {
         const saved = JSON.stringify(log.state());
         const panels = () => [...log.host.querySelectorAll<HTMLElement>('[role="log"]')];
         expect(panels()).toHaveLength(2);
-        expect([...log.host.querySelectorAll("h2")].map(h => h.textContent)).toEqual(["Game Log", "Story Log"]);
+        expect(log.host.querySelector(".kcq-full-game-log h2")).toBeNull();
+        expect(panels().map(panel => panel.getAttribute("aria-label"))).toEqual(["Chronological game events", "Story Log"]);
         expect(panels()[0]!.querySelector("[data-outcome]")).not.toBeNull();
         expect(panels()[1]!.textContent).toContain("Ko-chan launches a rock at Skunkette A");
         expect(panels()[1]!.querySelector("[data-outcome]")).toBeNull();
