@@ -240,19 +240,19 @@ describe("outcome dialog presentation", () => {
         dispose?.(); dispose = undefined; expect(document.activeElement).toBe(trigger);
     });
 
-    it("leaves the Settings frame and scroll behavior unchanged", () => {
+    it("keeps Settings sizing separate from outcome dialogs with scrolling available", () => {
         const host = document.createElement("div"); document.body.append(host);
         dispose = render(() => createComponent(BattleSettingsPanel, { presentation: new Presentation(stockStrings), release: "test", onResume: vi.fn() }), host);
         expect(document.querySelector(".kcq-outcome__overlay")).toBeNull();
-        expect(style(".kcq-battle-result__viewport").width).toBe("400px");
-        expect(style(".kcq-battle-settings").maxWidth).toBe("380px");
+        expect(style(".kcq-battle-result__viewport").width).toBe("814px");
+        expect(style(".kcq-battle-settings").maxWidth).toBe("790px");
         expect(style(".kcq-battle-settings").overflowY).toBe("auto");
     });
 
     it.each([
         [390, "auto"], [1024, "auto"], [1920, "auto"],
         [1024, "3"], [1920, "1"], [1920, "2"],
-    ] as const)("selects compact Settings by semantic layout at %ipx with %s columns", (width, columns: BattleColumns) => {
+    ] as const)("selects Settings columns by semantic layout at %ipx with %s columns", (width, columns: BattleColumns) => {
         viewport.setViewport({ width, height: 900 });
         const host = document.createElement("div"); document.body.append(host);
         dispose = render(() => createComponent(BattleSettingsPanel, {
@@ -261,10 +261,10 @@ describe("outcome dialog presentation", () => {
             overviewGameLog: { value: 4, onChange: vi.fn() },
         }), host);
         const layout = calculateResponsiveLayout(availableWidthFromViewport(width), columns).size;
-        const wide = layout === "wide";
+        const wide = layout !== "narrow";
         expect(element(".kcq-battle-settings__overlay").dataset.kcqLayout).toBe(layout);
-        expect(style(".kcq-battle-result__viewport").width).toBe(wide ? "400px" : "366px");
-        expect(style(".kcq-battle-settings").maxWidth).toBe(wide ? "380px" : "340px");
+        expect(style(".kcq-battle-result__viewport").width).toBe(wide ? "814px" : "366px");
+        expect(style(".kcq-battle-settings").maxWidth).toBe(wide ? "790px" : "340px");
         expect(style(".kcq-battle-settings").gap).toBe(wide ? "6px" : "10px");
         expect(style(".kcq-battle-settings__option").fontSize).toBe(wide ? "12px" : "13px");
         expect(style(".kcq-battle-settings__option select").width).toBe(wide ? "175px" : "");

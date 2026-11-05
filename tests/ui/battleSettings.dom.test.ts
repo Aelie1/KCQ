@@ -1,3 +1,5 @@
+import type { Window as HappyWindow } from "happy-dom";
+import { readFileSync } from "node:fs";
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -94,6 +96,67 @@ function key(key: string, shiftKey = false) {
 }
 
 describe("battle settings interactions", () => {
+    it("keeps the original Narrow order and places five settings per desktop column without losing preferences", () => {
+        const viewport = (window as unknown as HappyWindow).happyDOM;
+        const initialViewport = { width: window.innerWidth, height: window.innerHeight };
+        const css = document.createElement("style");
+        css.textContent = readFileSync("src/ui/web/app/tokens.css", "utf8") + readFileSync("src/ui/web/app/app.css", "utf8");
+        document.body.append(css);
+        vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(() => window.innerWidth);
+        try {
+            viewport.setViewport({ width: 1920, height: 1080 });
+            mountBattle([{ id: "en", label: "English", presentation }, { id: "test", label: "Test", presentation }]);
+            const dialog = openSettings();
+            const options = dialog.querySelector<HTMLElement>(".kcq-battle-settings__options")!;
+            const order = ["language", "theme", "columns", "enemy-cards", "binding-descriptions", "shortcut-hints",
+                "full-log-style", "compact-log-style", "log-lines", "playback-speed"];
+            expect([...options.querySelectorAll("label")].map(label => label.classList[1]))
+                .toEqual(order.map(name => "kcq-battle-settings__" + name));
+            const choices = [
+                ["language", "test", "language"], ["theme", "light", "theme"],
+                ["enemy-cards", "expanded", "enemyCards"], ["binding-descriptions", "on", "bindingDescriptions"],
+                ["shortcut-hints", "always", "keyboardShortcutHints"], ["full-log-style", "story", "fullLogStyle"],
+                ["compact-log-style", "story", "compactLogStyle"], ["playback-speed", "slow", "playbackSpeed"],
+            ] as const;
+            for (const [name, value, storage] of choices) {
+                const select = options.querySelector<HTMLSelectElement>(".kcq-battle-settings__" + name + " select")!;
+                select.value = value; select.dispatchEvent(new Event("change", { bubbles: true }));
+                expect(window.localStorage.getItem("kcq." + storage)).toBe(value);
+            }
+            const lines = options.querySelector<HTMLInputElement>("input")!;
+            lines.value = "7"; lines.dispatchEvent(new Event("input", { bubbles: true }));
+            for (const width of [390, 800, 1024, 1399, 1400, 1920, 390]) {
+                button("Resume").click();
+                viewport.setViewport({ width }); window.dispatchEvent(new Event("resize"));
+                openSettings();
+                const options = document.querySelector<HTMLElement>(".kcq-battle-settings__options")!;
+                const narrow = width < 800;
+                expect(document.querySelector(".kcq-battle-settings__overlay")?.getAttribute("data-kcq-layout"), String(width)).toBe(narrow ? "narrow" : width < 1400 ? "medium" : "wide");
+                expect(getComputedStyle(options).gridTemplateColumns).toBe(narrow ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))");
+                expect(getComputedStyle(options).gap).toBe(narrow ? "10px" : "6px 24px");
+                expect(getComputedStyle(options).gridTemplateAreas.replace(/\s+/g, " ")).toBe(narrow ? "" :
+                    '"language columns" "theme enemy-cards" "binding-descriptions full-log-style" "shortcut-hints compact-log-style" "playback-speed log-lines"');
+                for (const [name, value] of choices) {
+                    const select = options.querySelector<HTMLSelectElement>(".kcq-battle-settings__" + name + " select")!;
+                    expect(select.value).toBe(value);
+                    if (!narrow) {
+                        expect(getComputedStyle(select).width).toBe("175px");
+                        expect(getComputedStyle(select.closest("label")!).gridArea).toBe(name);
+                        expect(getComputedStyle(select.closest("label")!).justifyContent).toBe("space-between");
+                    }
+                }
+                expect(options.querySelector<HTMLInputElement>("input")?.value).toBe("7");
+                expect(document.querySelector(".kcq-battle-settings")!.querySelectorAll(":scope > .kcq-battle-result__actions")).toHaveLength(3);
+            }
+            button("Resume").click();
+            const reopened = openSettings();
+            for (const [name, value] of choices) {
+                expect(reopened.querySelector<HTMLSelectElement>(".kcq-battle-settings__" + name + " select")?.value).toBe(value);
+            }
+            expect(reopened.querySelector<HTMLInputElement>("input")?.value).toBe("7");
+        } finally { viewport.setViewport(initialViewport); }
+    });
+
     it("opens from the gear with primary Resume, language, divider and navigation in order", () => {
         mountBattle();
         const background = document.querySelector(".kcq-battle-stage__background")!;

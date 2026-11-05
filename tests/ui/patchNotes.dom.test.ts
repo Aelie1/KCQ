@@ -244,7 +244,7 @@ describe("Patch Notes startup and navigation", () => {
     });
 });
 
-/** Compare computed sizing against the actual settings panel at the same viewport. */
+/** Shared portal behavior stays aligned; Patch Notes keeps its own reading width. */
 function expectSettingsSizing(): void {
     const host = document.createElement("div"); document.body.append(host);
     const dispose = render(() => createComponent(BattleSettingsPanel, {
@@ -258,19 +258,22 @@ function expectSettingsSizing(): void {
         for (const [notes, settings, properties] of [
             [notesOverlay, settingsOverlay, ["position", "inset", "padding", "zIndex"]],
             [element(".kcq-patch-notes__overlay .kcq-battle-result__viewport"),
-            element(".kcq-battle-settings__overlay .kcq-battle-result__viewport"), ["width", "minWidth", "maxWidth", "height", "padding"]],
-            [element(".kcq-patch-notes"), element(".kcq-battle-settings"), ["width", "maxWidth", "maxHeight", "padding", "gap"]],
+            element(".kcq-battle-settings__overlay .kcq-battle-result__viewport"), ["height", "padding"]],
+            [element(".kcq-patch-notes"), element(".kcq-battle-settings"), ["width", "maxHeight", "padding", "gap"]],
         ] as const) {
             const notesStyle = getComputedStyle(notes); const settingsStyle = getComputedStyle(settings);
             for (const property of properties) expect(notesStyle[property]).toBe(settingsStyle[property]);
         }
+        const narrow = notesOverlay.dataset.kcqLayout === "narrow";
+        expect(getComputedStyle(element(".kcq-patch-notes__overlay .kcq-battle-result__viewport")).width).toBe(narrow ? "366px" : "400px");
+        expect(getComputedStyle(element(".kcq-patch-notes")).maxWidth).toBe(narrow ? "340px" : "380px");
     } finally { dispose(); host.remove(); }
 }
 
 describe("Patch Notes responsive presentation", () => {
     it.each([
         [390, 480, "narrow"], [1280, 720, "medium"], [2200, 900, "wide"],
-    ] as const)("matches settings sizing with scrolling notes at %ix%i (%s)", (width, height, layout) => {
+    ] as const)("preserves its frame with scrolling notes at %ix%i (%s)", (width, height, layout) => {
         viewport.setViewport({ width, height }); mount();
         expect(element(".kcq-app").dataset.kcqLayout).toBe(layout);
         const screen = element(".kcq-patch-notes");

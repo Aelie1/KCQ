@@ -4655,6 +4655,12 @@ button {
     flex-shrink: 0;
 }
 
+.kcq-battle-settings__options {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+}
+
 .kcq-battle-settings__reset {
     margin-top: 8px;
 }
@@ -7021,19 +7027,60 @@ button {
     }
 }
 
-/* Compact settings for the wide portal layout. */
+/* Settings and Patch Notes follow the portal's semantic layout. */
 /* Dialog sizing */
-:is(.kcq-battle-settings__overlay, .kcq-patch-notes__overlay):is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result__viewport {
+.kcq-patch-notes__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result__viewport {
     width: 400px;
     max-width: 100%;
 }
 
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result__viewport {
+    /* 756px of settings, plus the existing dialog and viewport padding/border. */
+    width: 814px;
+    max-width: var(--kcq-layout-width);
+    min-width: 0;
+}
+
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings {
+    max-width: 790px;
+}
+
 .kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings,
 .kcq-patch-notes__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-patch-notes {
-    max-width: 380px;
     gap: 6px;
     padding: 16px;
 }
+
+.kcq-patch-notes__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-patch-notes {
+    max-width: 380px;
+}
+
+/* Explicit placement keeps the original single-column DOM order in Narrow. */
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+        "language columns"
+        "theme enemy-cards"
+        "binding-descriptions full-log-style"
+        "shortcut-hints compact-log-style"
+        "playback-speed log-lines";
+    gap: 6px 24px;
+}
+
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__options > label {
+    grid-area: var(--kcq-settings-area);
+}
+
+.kcq-battle-settings__language { --kcq-settings-area: language; }
+.kcq-battle-settings__theme { --kcq-settings-area: theme; }
+.kcq-battle-settings__columns { --kcq-settings-area: columns; }
+.kcq-battle-settings__enemy-cards { --kcq-settings-area: enemy-cards; }
+.kcq-battle-settings__binding-descriptions { --kcq-settings-area: binding-descriptions; }
+.kcq-battle-settings__shortcut-hints { --kcq-settings-area: shortcut-hints; }
+.kcq-battle-settings__full-log-style { --kcq-settings-area: full-log-style; }
+.kcq-battle-settings__compact-log-style { --kcq-settings-area: compact-log-style; }
+.kcq-battle-settings__log-lines { --kcq-settings-area: log-lines; }
+.kcq-battle-settings__playback-speed { --kcq-settings-area: playback-speed; }
 
 .kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__shortcut-hints span {
     max-width: 150px;
@@ -7057,7 +7104,6 @@ button {
 .kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__option select {
     flex: 0 0 auto;
     width: 175px;
-    max-width: 48%;
     min-height: 32px;
     padding: 4px 8px;
     font-size: 12px;
