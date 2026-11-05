@@ -15,4 +15,8 @@ export const patchNotesEnglishStrings: StringTable = {
     "ui.patchNotes.1.2.0.line1": "Added elite enemies to the Act 3 battles.  These enemies regenerate and can rejoin the battle after being defeated.",
     "ui.patchNotes.1.2.0.line2": "Skunk Queen's Healing Perfume now heals over three rounds instead of instantly.",
     "ui.patchNotes.1.2.0.line3": "Added healing previews, enemy rank treatments, difficulty header icons, and other minor UI improvements. Completely unusable actions no longer appear in the command panel.",
+    "ui.patchNotes.1.2.1.title": "Game Log Enhancements",
+    "ui.patchNotes.1.2.1.line1": "Game Log can now show both story and game logs at once in any full screen mode.",
+    "ui.patchNotes.1.2.1.line2": "Compact logs can choose between story and game logs in settings.",
+    "ui.patchNotes.1.2.1.line3": "Settings panel is now two columns for medium and wide screens.",
 };

@@ -1,5 +1,25 @@
 # Ko-chan's Quest Patch Notes
 
+## 1.3.0 — 2026-11-05
+
+### Game Log Improvements
+
+* Added a **Both** mode that displays the mechanical Game Log and narrative Story Log simultaneously, stacked vertically.
+* Added synchronized scrolling between the two logs, matching combat rounds and relative positions within each round despite differences in text length.
+* Improved scrolling behavior so new combat events appear automatically while allowing players to review earlier rounds.
+* Replaced the existing Game Log tabs with two independent settings:
+  * **Full Log Style:** Game Log, Story Log, or Both.
+  * **Compact Log Style:** Game Log or Story Log.
+* The full log now defaults to **Both**, making combat narration visible alongside mechanical results.
+* Log style preferences persist between sessions, with existing preferences migrated to the new settings.
+
+### Settings Interface
+
+* Redesigned Settings into a **two-column layout** for Medium and Wide displays, reducing vertical space requirements.
+* Organized settings into two balanced columns, with general preferences on the left and interface layout options on the right.
+* Narrow displays retain a single-column layout.
+* Expanded the Settings dialog to take advantage of available screen width, allowing all options to fit on typical desktop displays without scrolling.
+
 ## 1.2.0 — 2026-10-27
 
 ### Elite Enemies
