@@ -1,6 +1,6 @@
 # Ko-chan's Quest Patch Notes
 
-## 1.3.0 — 2026-11-05
+## 1.2.1 — 2026-11-05
 
 ### Game Log Improvements
 
