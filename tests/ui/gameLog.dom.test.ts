@@ -557,7 +557,7 @@ describe("full log styles", () => {
         expect(log.host.querySelector('[role="tab"], [role="tablist"], [role="tabpanel"]')).toBeNull();
         expect(JSON.stringify(log.state())).toBe(saved);
     });
-    it("independently follows both logs, preserves scrollback, and cancels both queued updates", () => {
+    it("shares bottom-follow state, preserves scrollback, and cancels queued updates", () => {
         const log = mountScrollingLog("both");
         const story = log.host.querySelectorAll<HTMLElement>('[role="log"]')[1]!;
         let storyHeight = 1200;
@@ -566,18 +566,18 @@ describe("full log styles", () => {
         expect(log.viewport.scrollTop).toBe(800); expect(story.scrollTop).toBe(1000);
         log.scroll(140);
         storyHeight += 100; log.append(); log.flush();
-        expect(log.viewport.scrollTop).toBe(140); expect(story.scrollTop).toBe(1100);
+        expect(log.viewport.scrollTop).toBe(140); expect(story.scrollTop).toBe(1000);
         story.scrollTop = 260; story.dispatchEvent(new Event("scroll"));
         log.scroll(900);
         storyHeight += 100; log.append(); log.flush();
-        expect(log.viewport.scrollTop).toBe(1000); expect(story.scrollTop).toBe(260);
+        expect(log.viewport.scrollTop).toBe(1000); expect(story.scrollTop).toBe(1200);
         log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.storyLog": "Translated Story" }));
         log.flush();
-        expect(story.scrollTop).toBe(260);
+        expect(story.scrollTop).toBe(1200);
         expect(story.getAttribute("aria-label")).toBe("Translated Story");
         log.setEntries([]); log.setHeight(0); storyHeight = 0; log.flush();
         expect(log.viewport.scrollTop).toBe(0); expect(story.scrollTop).toBe(0);
-        log.append(); expect(log.pending.size).toBe(2);
+        log.append(); expect(log.pending.size).toBe(1);
         unmount!(); unmount = undefined;
         expect(log.pending.size).toBe(0); expect(log.disconnect).toHaveBeenCalledTimes(2);
     });

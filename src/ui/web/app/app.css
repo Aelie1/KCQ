@@ -1790,6 +1790,10 @@ button {
     scrollbar-width: thin;
 }
 
+.kcq-full-game-log__viewport > .kcq-game-log__scroll {
+    position: relative;
+}
+
 .kcq-full-game-log__viewport .kcq-game-log__scroll > * {
     flex-shrink: 0;
 }

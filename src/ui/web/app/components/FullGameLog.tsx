@@ -3,6 +3,7 @@ import type { ContentLibrary } from "../../../../engine/public/library";
 import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
 import { DEFAULT_FULL_LOG_STYLE, type CompactLogStyle, type FullLogStyle } from "../gameLogMode";
+import { createGameLogScroll, groupGameLogRounds, type GameLogRound } from "../gameLogScroll";
 import { createGameLogViewModel } from "../viewModels/gameLog";
 import { createStoryLogViewModel } from "../viewModels/storyLog";
 import { GameLogEntry } from "./GameLogEntry";
@@ -18,54 +19,39 @@ export interface FullGameLogProps {
     round?: number;
 }
 
-/** Each visible log owns its scrollback and follows independently. */
-function LogHistory(props: FullGameLogProps & { kind: CompactLogStyle; headings: boolean }): JSX.Element {
+function LogHistory(props: FullGameLogProps & {
+    kind: CompactLogStyle;
+    headings: boolean;
+    rounds: readonly GameLogRound[];
+    scroll: ReturnType<typeof createGameLogScroll>;
+}): JSX.Element {
     const id = createUniqueId();
     const label = () => props.presentation.ui(props.kind === "game" ? "combatHeader.gameLog" : "gameLog.storyLog");
-    const entries = createMemo(() => props.kind === "game" ? createGameLogViewModel(props.entries, props.presentation, props.party)
-        : createStoryLogViewModel(props.entries, props.presentation, props.party, props.library));
+    const rounds = createMemo(() => new Map(props.rounds.map(group => [group.round,
+        props.kind === "game" ? createGameLogViewModel(group.entries, props.presentation, props.party)
+            : createStoryLogViewModel(group.entries, props.presentation, props.party, props.library),
+    ])));
     let viewport!: HTMLDivElement;
     let content!: HTMLDivElement;
-    let following = true;
-    let frame: number | undefined;
-    let previousCount = props.entries.length;
-    let previousEncounter = props.encounterId;
-    let previousRound = props.round;
-    const scheduleFollow = () => {
-        if (frame !== undefined) return;
-        frame = requestAnimationFrame(() => {
-            frame = undefined;
-            if (following) viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
-        });
-    };
     createEffect(() => {
-        entries();
-        const count = props.entries.length;
-        const encounter = props.encounterId;
-        const round = props.round;
-        if ((!count && previousCount) || encounter !== previousEncounter || (round !== undefined && previousRound !== undefined && round < previousRound)) following = true;
-        previousCount = count;
-        previousEncounter = encounter;
-        previousRound = round;
-        scheduleFollow();
+        rounds();
+        props.scroll.changed();
     });
     onMount(() => {
-        const observer = new ResizeObserver(scheduleFollow);
-        observer.observe(viewport);
-        observer.observe(content);
-        scheduleFollow();
-        onCleanup(() => observer.disconnect());
+        onCleanup(props.scroll.register(props.kind, viewport, content));
     });
-    onCleanup(() => { if (frame !== undefined) cancelAnimationFrame(frame); });
     return <section class="kcq-full-game-log__panel" aria-label={label()}>
         <Show when={props.headings}><h2 id={id} class="kcq-full-game-log__heading">{label()}</h2></Show>
         <div ref={viewport} class="kcq-full-game-log__viewport" role="log" tabIndex={0}
             aria-label={props.kind === "story" ? label() : props.presentation.ui("gameLog.chronological")}
-            aria-labelledby={props.headings ? id : undefined}
-            onScroll={() => { following = viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= 32; }}>
+            aria-labelledby={props.headings ? id : undefined}>
             <div ref={content} class="kcq-game-log__scroll">
-                <Show when={entries().length} fallback={<p class="kcq-game-log__empty">{props.presentation.ui("gameLog.empty")}</p>}>
-                    <For each={entries()}>{entry => "paragraphs" in entry ? <StoryLogEntry entry={entry} /> : <GameLogEntry entry={entry} />}</For>
+                <Show when={[...rounds().values()].some(entries => entries.length)} fallback={<p class="kcq-game-log__empty">{props.presentation.ui("gameLog.empty")}</p>}>
+                    <For each={[...rounds().keys()]}>{round => <div data-log-round={round}>
+                        <For each={rounds().get(round)!}>
+                            {entry => "paragraphs" in entry ? <StoryLogEntry entry={entry} /> : <GameLogEntry entry={entry} />}
+                        </For>
+                    </div>}</For>
                 </Show>
             </div>
         </div>
@@ -74,8 +60,26 @@ function LogHistory(props: FullGameLogProps & { kind: CompactLogStyle; headings:
 
 export function FullGameLog(props: FullGameLogProps): JSX.Element {
     const style = () => props.style ?? DEFAULT_FULL_LOG_STYLE;
+    const rounds = createMemo(() => groupGameLogRounds(props.entries));
+    const scroll = createGameLogScroll(() => style() === "both");
+    let previousCount = props.entries.length;
+    let previousEncounter = props.encounterId;
+    let previousRound = props.round;
+    createEffect(() => {
+        const count = props.entries.length;
+        const encounter = props.encounterId;
+        const round = props.round;
+        style();
+        const reset = (!count && previousCount > 0) || encounter !== previousEncounter
+            || (round !== undefined && previousRound !== undefined && round < previousRound);
+        previousCount = count;
+        previousEncounter = encounter;
+        previousRound = round;
+        scroll.changed(reset);
+    });
+    onCleanup(() => scroll.dispose());
     return <div class="kcq-full-game-log" classList={{ "kcq-full-game-log--both": style() === "both" }}>
-        <Show when={style() !== "story"}><LogHistory {...props} kind="game" headings={style() === "both"} /></Show>
-        <Show when={style() !== "game"}><LogHistory {...props} kind="story" headings={style() === "both"} /></Show>
+        <Show when={style() !== "story"}><LogHistory {...props} kind="game" headings={style() === "both"} rounds={rounds()} scroll={scroll} /></Show>
+        <Show when={style() !== "game"}><LogHistory {...props} kind="story" headings={style() === "both"} rounds={rounds()} scroll={scroll} /></Show>
     </div>;
 }

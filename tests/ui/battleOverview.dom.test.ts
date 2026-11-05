@@ -3,6 +3,9 @@ import { readFileSync } from "node:fs";
 import { createComponent, createSignal } from "solid-js";
 import { insert, render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { GameLogPresentationEntry } from "../../src/ui/presentation/gameLog";
+import { createBattleResultTracker } from "../../src/ui/web/app/viewModels/battleResult";
+import { createGameLogHistory } from "../../src/ui/web/app/viewModels/gameLogHistory";
 import type { GameState } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
 import { App } from "../../src/ui/web/app/App";
@@ -44,14 +47,17 @@ function mount(view: Parameters<typeof render>[0], responsive = false): HTMLElem
     }
     return host;
 }
-function mountBattle(width = 1920, lines = 3, initialState: GameState = fixture.state) {
+function mountBattle(width = 1920, lines = 3, initialState: GameState = fixture.state, history?: GameLogPresentationEntry[]) {
     viewport.setViewport({ width, height: 1080 });
     const engine = createStockEngine(12345);
     const state: GameState = structuredClone(initialState); state.turn.phase = "player";
     vi.spyOn(engine, "getGameState").mockReturnValue(state);
     vi.spyOn(engine, "getActionView").mockReturnValue([...fixture.actions]);
     const execute = vi.spyOn(engine, "executeAction").mockReturnValue({ success: false, reason: "actorAlreadyActed" });
+    const gameLog = createGameLogHistory(state).getSaveState();
+    if (history) gameLog.entries = history;
     const host = mount(() => createComponent(BattleApp, {
+        saved: history ? { gameLog, stats: createBattleResultTracker(state).getSaveState() } : undefined,
         engine, presentation: fixture.presentation, overviewGameLog: { value: lines, onChange: vi.fn() },
     }), true);
     return { host, execute };
@@ -593,4 +599,33 @@ it.each([390, 1024, 1920])("applies every full style to ongoing and completed ba
         }
         unmount?.(); unmount = undefined; document.body.replaceChildren();
     }
+});
+it.each([390, 1024, 1920])("synchronizes round fractions through the actual log presentation at %ipx", width => {
+    const pending = new Map<number, FrameRequestCallback>(); let id = 0;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { pending.set(++id, callback); return id; });
+    vi.stubGlobal("cancelAnimationFrame", (frame: number) => pending.delete(frame));
+    const history: GameLogPresentationEntry[] = [1, 2, 3].flatMap(round => [
+        { kind: "phase", phase: "player", round, outcomes: [] } as GameLogPresentationEntry,
+        { kind: "move", actor: "ko", move: "telekinesis", targetIds: ["skunkette1"], outcomes: [
+            { kind: "damage", target: "skunkette1", damage: 18, healing: 0, blocked: 0,
+                hits: [{ result: "hit", damage: 18, healing: 0, blocked: 0 }] },
+        ] } as GameLogPresentationEntry,
+    ]);
+    mountBattle(width, 3, fixture.state, history);
+    if (width < AUTO_WIDE_BREAKPOINT) element(".kcq-compact-game-log").click();
+    const full = element(".kcq-full-game-log");
+    const [game, story] = [...full.querySelectorAll<HTMLElement>('[role="log"]')] as [HTMLElement, HTMLElement];
+    const flush = () => { for (const [frame, callback] of [...pending]) { pending.delete(frame); callback(0); } };
+    for (const [panel, heights] of [[game, [200, 400, 600]], [story, [300, 600, 900]]] as const) {
+        Object.defineProperties(panel, { scrollHeight: { value: heights.reduce((sum, height) => sum + height, 0) }, clientHeight: { value: 100 } });
+        [...panel.querySelectorAll<HTMLElement>("[data-log-round]")].forEach((anchor, index) => Object.defineProperties(anchor, {
+            offsetTop: { value: heights.slice(0, index).reduce((sum, height) => sum + height, 0) }, offsetHeight: { value: heights[index] },
+        }));
+    }
+    flush();
+    game.scrollTop = 300; game.dispatchEvent(new Event("scroll")); flush(); expect(story.scrollTop).toBe(500);
+    story.scrollTop = 1100; story.dispatchEvent(new Event("scroll")); flush(); expect(game.scrollTop).toBe(700);
+    expect(getComputedStyle(full).gridTemplateRows).toBe("repeat(2, minmax(0, 1fr))");
+    expect(getComputedStyle(game).overflowY).toBe("auto"); expect(getComputedStyle(story).overflowY).toBe("auto");
+    expect(!!document.querySelector(".kcq-battle-log--modal")).toBe(width >= AUTO_MEDIUM_BREAKPOINT && width < AUTO_WIDE_BREAKPOINT);
 });
