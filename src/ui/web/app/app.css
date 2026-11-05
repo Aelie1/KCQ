@@ -7055,32 +7055,12 @@ button {
     max-width: 380px;
 }
 
-/* Explicit placement keeps the original single-column DOM order in Narrow. */
 .kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__options {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas:
-        "language columns"
-        "theme enemy-cards"
-        "binding-descriptions full-log-style"
-        "shortcut-hints compact-log-style"
-        "playback-speed log-lines";
+    grid-template-rows: repeat(5, auto);
+    grid-auto-flow: column;
     gap: 6px 24px;
 }
-
-.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__options > label {
-    grid-area: var(--kcq-settings-area);
-}
-
-.kcq-battle-settings__language { --kcq-settings-area: language; }
-.kcq-battle-settings__theme { --kcq-settings-area: theme; }
-.kcq-battle-settings__columns { --kcq-settings-area: columns; }
-.kcq-battle-settings__enemy-cards { --kcq-settings-area: enemy-cards; }
-.kcq-battle-settings__binding-descriptions { --kcq-settings-area: binding-descriptions; }
-.kcq-battle-settings__shortcut-hints { --kcq-settings-area: shortcut-hints; }
-.kcq-battle-settings__full-log-style { --kcq-settings-area: full-log-style; }
-.kcq-battle-settings__compact-log-style { --kcq-settings-area: compact-log-style; }
-.kcq-battle-settings__log-lines { --kcq-settings-area: log-lines; }
-.kcq-battle-settings__playback-speed { --kcq-settings-area: playback-speed; }
 
 .kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__shortcut-hints span {
     max-width: 150px;

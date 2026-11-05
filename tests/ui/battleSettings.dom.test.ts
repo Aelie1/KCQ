@@ -96,7 +96,7 @@ function key(key: string, shiftKey = false) {
 }
 
 describe("battle settings interactions", () => {
-    it("keeps the original Narrow order and places five settings per desktop column without losing preferences", () => {
+    it("uses column-first DOM and native focus order in every layout without losing preferences", () => {
         const viewport = (window as unknown as HappyWindow).happyDOM;
         const initialViewport = { width: window.innerWidth, height: window.innerHeight };
         const css = document.createElement("style");
@@ -108,8 +108,8 @@ describe("battle settings interactions", () => {
             mountBattle([{ id: "en", label: "English", presentation }, { id: "test", label: "Test", presentation }]);
             const dialog = openSettings();
             const options = dialog.querySelector<HTMLElement>(".kcq-battle-settings__options")!;
-            const order = ["language", "theme", "columns", "enemy-cards", "binding-descriptions", "shortcut-hints",
-                "full-log-style", "compact-log-style", "log-lines", "playback-speed"];
+            const order = ["language", "theme", "binding-descriptions", "shortcut-hints", "playback-speed",
+                "columns", "enemy-cards", "full-log-style", "compact-log-style", "log-lines"];
             expect([...options.querySelectorAll("label")].map(label => label.classList[1]))
                 .toEqual(order.map(name => "kcq-battle-settings__" + name));
             const choices = [
@@ -134,14 +134,25 @@ describe("battle settings interactions", () => {
                 expect(document.querySelector(".kcq-battle-settings__overlay")?.getAttribute("data-kcq-layout"), String(width)).toBe(narrow ? "narrow" : width < 1400 ? "medium" : "wide");
                 expect(getComputedStyle(options).gridTemplateColumns).toBe(narrow ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))");
                 expect(getComputedStyle(options).gap).toBe(narrow ? "10px" : "6px 24px");
-                expect(getComputedStyle(options).gridTemplateAreas.replace(/\s+/g, " ")).toBe(narrow ? "" :
-                    '"language columns" "theme enemy-cards" "binding-descriptions full-log-style" "shortcut-hints compact-log-style" "playback-speed log-lines"');
+                expect(getComputedStyle(options).gridTemplateRows).toBe(narrow ? "" : "repeat(5, auto)");
+                expect(getComputedStyle(options).gridAutoFlow).toBe(narrow ? "" : "column");
+                expect(getComputedStyle(options).gridTemplateAreas).toBe("");
+                const controls = [...options.querySelectorAll<HTMLElement>("select, input")];
+                expect(controls.map(control => control.closest("label")!.classList[1]))
+                    .toEqual(order.map(name => "kcq-battle-settings__" + name));
+                for (const control of controls) {
+                    expect(control.tabIndex).toBe(0);
+                    expect(getComputedStyle(control.closest("label")!).gridArea).toBe("");
+                    control.focus();
+                    const tab = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+                    control.dispatchEvent(tab);
+                    expect(tab.defaultPrevented).toBe(false);
+                }
                 for (const [name, value] of choices) {
                     const select = options.querySelector<HTMLSelectElement>(".kcq-battle-settings__" + name + " select")!;
                     expect(select.value).toBe(value);
                     if (!narrow) {
                         expect(getComputedStyle(select).width).toBe("175px");
-                        expect(getComputedStyle(select.closest("label")!).gridArea).toBe(name);
                         expect(getComputedStyle(select.closest("label")!).justifyContent).toBe("space-between");
                     }
                 }
