@@ -3,8 +3,8 @@ import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameLogPresentationEntry } from "../../src/ui/presentation/gameLog";
 import { Presentation } from "../../src/ui/presentation/presentation";
-import type { CompactLogStyle, FullLogStyle } from "../../src/ui/web/app/gameLogMode";
 import { CompactGameLog } from "../../src/ui/web/app/components/CompactGameLog";
+import type { CompactLogStyle, FullLogStyle } from "../../src/ui/web/app/gameLogMode";
 import { createOverviewGameLogPreference } from "../../src/ui/web/app/overviewGameLogLines";
 import { BattleSettingsPanel } from "../../src/ui/web/app/panels/BattleSettingsPanel";
 import { stockStrings } from "../helpers/stockStrings";
@@ -65,7 +65,7 @@ describe("Overview Game Log preference", () => {
         }), host);
         const slider = document.querySelector<HTMLInputElement>('input[type="range"]')!;
         expect([slider.min, slider.max, slider.step, slider.value]).toEqual(["0", "8", "1", "3"]);
-        expect(slider.closest("label")!.textContent).toContain("Overview Game Log Lines");
+        expect(slider.closest("label")!.textContent).toContain("Compact Log Lines");
         for (let value = 0; value <= 8; value++) {
             slider.value = String(value); slider.dispatchEvent(new Event("input", { bubbles: true }));
             expect(preference.value).toBe(value);

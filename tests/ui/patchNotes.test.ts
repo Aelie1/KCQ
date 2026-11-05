@@ -8,6 +8,9 @@ import { releaseHistory } from "../../src/ui/web/app/content/releaseHistory";
 import { hasSeenPatchNotes, markPatchNotesSeen, PATCH_NOTES_STORAGE_KEY } from "../../src/ui/web/app/patchNotes";
 import { createPatchNotesViewModel } from "../../src/ui/web/app/viewModels/patchNotes";
 
+const testVersion = "test-current";
+const previousVersion = "test-previous";
+
 // Render portal contents inline for server-side content assertions.
 vi.mock("solid-js/web", async importOriginal => ({
     ...await importOriginal<typeof import("solid-js/web")>(),
@@ -15,9 +18,9 @@ vi.mock("solid-js/web", async importOriginal => ({
 }));
 
 describe("Patch Notes storage", () => {
-    it.each([null, "", "{}", "null", "\"1.1.0\"", "broken JSON {", "1.0.1", "v1.1.0"])(
+    it.each([null, "", "{}", "null", JSON.stringify(testVersion), "broken JSON {", previousVersion, `v${testVersion}`])(
         "treats missing, malformed or different values (%j) as unseen", saved => {
-            expect(hasSeenPatchNotes("1.1.0", { getItem: () => saved })).toBe(false);
+            expect(hasSeenPatchNotes(testVersion, { getItem: () => saved })).toBe(false);
         },
     );
 
@@ -34,11 +37,11 @@ describe("Patch Notes storage", () => {
     });
 
     it("handles unavailable storage without throwing", () => {
-        expect(hasSeenPatchNotes("1.1.0", { getItem: () => { throw new Error("denied"); } })).toBe(false);
-        expect(() => markPatchNotesSeen("1.1.0", { setItem: () => { throw new Error("full"); } })).not.toThrow();
+        expect(hasSeenPatchNotes(testVersion, { getItem: () => { throw new Error("denied"); } })).toBe(false);
+        expect(() => markPatchNotesSeen(testVersion, { setItem: () => { throw new Error("full"); } })).not.toThrow();
         // Node has no window; default storage access must be safe there as well.
-        expect(hasSeenPatchNotes("1.1.0")).toBe(false);
-        expect(() => markPatchNotesSeen("1.1.0")).not.toThrow();
+        expect(hasSeenPatchNotes(testVersion)).toBe(false);
+        expect(() => markPatchNotesSeen(testVersion)).not.toThrow();
     });
 });
 
@@ -49,14 +52,21 @@ describe("player release history", () => {
         const model = createPatchNotesViewModel(presentation);
         const html = renderToString(() => createComponent(PatchNotesScreen, { model, onClose: () => { } }))
             .replace(/\sdata-hk="[^"]*"/g, "").replace(/<!--.*?-->/g, "");
-        expect(model.releases.map(release => release.version)).toEqual(["1.1.0", "1.0.1", "1.0.0"]);
-        expect(model.releases.map(release => release.title)).toEqual([
-            "Story Log", "Binding Descriptions", "Initial Release",
-        ]);
+        expect(model.releases).toHaveLength(releaseHistory.releases.length);
+        expect(model.releases.map(release => release.version)).toEqual(releaseHistory.releases.map(release => release.version));
+        expect(model.releases.map(release => release.title)).toEqual(
+            releaseHistory.releases.map(release => release.titleKey ? presentation.ui(release.titleKey) : undefined),
+        );
         expect(html).not.toContain(">Placeholder<");
         expect(html).not.toContain("kcq-patch-notes__notice");
-        expect(html.indexOf("1.1.0")).toBeLessThan(html.indexOf("1.0.1"));
-        expect(html.indexOf("1.0.1")).toBeLessThan(html.indexOf("1.0.0"));
+        expect(html.match(/<article /g)).toHaveLength(releaseHistory.releases.length);
+        let previousHeadingIndex = -1;
+        for (const release of releaseHistory.releases) {
+            const headingIndex = html.indexOf(`<h2>${release.version}${release.titleKey ? " \u2014 " : "</h2>"}`);
+            expect(headingIndex).toBeGreaterThan(previousHeadingIndex);
+            previousHeadingIndex = headingIndex;
+            if (release.titleKey) expect(html).toContain(presentation.ui(release.titleKey));
+        }
         expect(html.match(/<li>/g)).toHaveLength(releaseHistory.releases.flatMap(release => release.sections.flatMap(section => section.bulletKeys)).length);
         expect(html).not.toContain("<time");
         for (const release of releaseHistory.releases) {

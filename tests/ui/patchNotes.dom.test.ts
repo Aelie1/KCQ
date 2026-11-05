@@ -17,6 +17,8 @@ import { releaseHistory } from "../../src/ui/web/app/content/releaseHistory";
 import { displayVersion } from "../../src/ui/web/app/version";
 import { createViewPreferences } from "../../src/ui/web/app/viewPreferences";
 
+const testRelease = "test-current";
+const previousRelease = "test-previous";
 const strings = getStringTable("en", stockCharacters, "skunk");
 const presentation = new Presentation(strings);
 const bulletKeys = releaseHistory.releases.flatMap(release => release.sections.flatMap(section => section.bulletKeys));
@@ -48,7 +50,7 @@ function press(key: string, options: KeyboardEventInit = {}): KeyboardEvent {
     document.dispatchEvent(new KeyboardEvent("keyup", { key, bubbles: true }));
     return event;
 }
-function mount(release = "1.1.0", languages?: readonly LanguageOption[]) {
+function mount(release = testRelease, languages?: readonly LanguageOption[]) {
     unmount?.(); document.body.replaceChildren();
     const composeCampaign = vi.fn(() => ({ library: createCampaignLibrary(stockCharacters, "skunk"), presentation }));
     const prepareBattle = vi.fn((campaign: "skunk", encounter: EncounterId, difficulty: DifficultyId) => {
@@ -76,7 +78,7 @@ describe("Patch Notes startup and navigation", () => {
         expect(element(".kcq-graphical-app__background").hasAttribute("inert")).toBe(true);
         expect(element(".kcq-graphical-app__background").getAttribute("aria-hidden")).toBe("true");
         expect(element(".kcq-app").contains(element(".kcq-patch-notes"))).toBe(false);
-        expect(document.querySelectorAll(".kcq-patch-notes__release")).toHaveLength(3);
+        expect(document.querySelectorAll(".kcq-patch-notes__release")).toHaveLength(releaseHistory.releases.length);
         expect([...document.querySelectorAll(".kcq-patch-notes li")].map(note => note.textContent)).toEqual(bulletKeys.map(key => presentation.ui(key)));
         expect(document.querySelector(".kcq-patch-notes__notice")).toBeNull();
         expect(window.localStorage.getItem(PATCH_NOTES_STORAGE_KEY)).toBeNull();
@@ -84,20 +86,20 @@ describe("Patch Notes startup and navigation", () => {
     });
 
     it("shows the normal title for a returning visitor who has seen the visible version", () => {
-        window.localStorage.setItem(PATCH_NOTES_STORAGE_KEY, displayVersion("1.1.0"));
+        window.localStorage.setItem(PATCH_NOTES_STORAGE_KEY, displayVersion(testRelease));
         mount();
         expect(document.querySelector(".kcq-patch-notes")).toBeNull();
-        expect(element(".kcq-title-screen__version").textContent).toContain(displayVersion("1.1.0"));
+        expect(element(".kcq-title-screen__version").textContent).toContain(displayVersion(testRelease));
         expect(element(".kcq-title-screen__version .kcq-title-screen__patch-notes").textContent).toBe("Patch Notes");
     });
 
     it("shows updates after a version change and persists the new version only on dismissal", () => {
-        window.localStorage.setItem(PATCH_NOTES_STORAGE_KEY, displayVersion("1.0.1"));
+        window.localStorage.setItem(PATCH_NOTES_STORAGE_KEY, displayVersion(previousRelease));
         mount();
         expect(document.querySelector(".kcq-patch-notes")).not.toBeNull();
-        expect(window.localStorage.getItem(PATCH_NOTES_STORAGE_KEY)).toBe(displayVersion("1.0.1"));
+        expect(window.localStorage.getItem(PATCH_NOTES_STORAGE_KEY)).toBe(displayVersion(previousRelease));
         close();
-        expect(window.localStorage.getItem(PATCH_NOTES_STORAGE_KEY)).toBe(displayVersion("1.1.0"));
+        expect(window.localStorage.getItem(PATCH_NOTES_STORAGE_KEY)).toBe(displayVersion(testRelease));
         expect(document.activeElement).toBe(element(".kcq-title-screen__patch-notes"));
         mount(); expect(document.querySelector(".kcq-patch-notes")).toBeNull();
         mount("preview"); expect(document.querySelector(".kcq-patch-notes")).not.toBeNull();
@@ -111,13 +113,13 @@ describe("Patch Notes startup and navigation", () => {
     });
 
     it("allows manual reopening and persists on every close", () => {
-        window.localStorage.setItem(PATCH_NOTES_STORAGE_KEY, displayVersion("1.1.0"));
+        window.localStorage.setItem(PATCH_NOTES_STORAGE_KEY, displayVersion(testRelease));
         mount();
         const title = element(".kcq-title-screen"); open();
         expect(document.querySelector(".kcq-patch-notes")).not.toBeNull();
         expect(element(".kcq-title-screen")).toBe(title);
         window.localStorage.removeItem(PATCH_NOTES_STORAGE_KEY); close();
-        expect(window.localStorage.getItem(PATCH_NOTES_STORAGE_KEY)).toBe(displayVersion("1.1.0"));
+        expect(window.localStorage.getItem(PATCH_NOTES_STORAGE_KEY)).toBe(displayVersion(testRelease));
         expect(document.activeElement).toBe(element(".kcq-title-screen__patch-notes"));
         open(); close(); expect(element(".kcq-title-screen")).toBe(title);
         expect(element(".kcq-graphical-app__background").hasAttribute("inert")).toBe(false);
@@ -158,7 +160,7 @@ describe("Patch Notes startup and navigation", () => {
         expect(document.querySelector(".kcq-patch-notes")).not.toBeNull();
         element(".kcq-patch-notes__overlay .kcq-battle-result__viewport").click();
         expect(document.querySelector(".kcq-patch-notes")).toBeNull();
-        expect(window.localStorage.getItem(PATCH_NOTES_STORAGE_KEY)).toBe(displayVersion("1.1.0"));
+        expect(window.localStorage.getItem(PATCH_NOTES_STORAGE_KEY)).toBe(displayVersion(testRelease));
         open(); element(".kcq-patch-notes__overlay").click();
         expect(document.activeElement).toBe(element(".kcq-title-screen__patch-notes"));
         expect(document.querySelector(".kcq-patch-notes")).toBeNull();
@@ -197,9 +199,9 @@ describe("Patch Notes startup and navigation", () => {
         expect(document.querySelector(".kcq-patch-notes")).toBeNull();
     });
 
-    it.each(["", "{}", "null", "{broken", "\"1.1.0\""])("recovers from malformed storage %j", value => {
+    it.each(["", "{}", "null", "{broken", JSON.stringify(testRelease)])("recovers from malformed storage %j", value => {
         window.localStorage.setItem(PATCH_NOTES_STORAGE_KEY, value); mount(); close();
-        expect(window.localStorage.getItem(PATCH_NOTES_STORAGE_KEY)).toBe(displayVersion("1.1.0"));
+        expect(window.localStorage.getItem(PATCH_NOTES_STORAGE_KEY)).toBe(displayVersion(testRelease));
     });
 
     it("stays dismissed in this session when reading and writing localStorage both throw", () => {
@@ -226,16 +228,19 @@ describe("Patch Notes startup and navigation", () => {
     });
 
     it("uses the selected language for the footer, heading, controls and release text", () => {
+        const release = releaseHistory.releases.find(release => release.titleKey && release.sections.some(section => section.bulletKeys.length))!;
+        const bulletKey = release.sections.flatMap(section => section.bulletKeys)[0]!;
         const localized = new Presentation({
             ...strings,
             "ui.patchNotes.title": "Localized updates", "ui.patchNotes.back": "Retour",
-            "ui.patchNotes.1.1.0.title": "Localized title", "ui.patchNotes.1.1.0.line1": "Nouveaux r?cits.",
+            [`ui.${release.titleKey}`]: "Localized title", [`ui.${bulletKey}`]: "Nouveaux r?cits.",
         });
         const languages = [{ id: "en", label: "English", presentation }, { id: "test", label: "Test", presentation: localized }];
-        window.localStorage.setItem("kcq.language", "test"); mount("1.1.0", languages);
+        window.localStorage.setItem("kcq.language", "test"); mount(testRelease, languages);
         expect(element(".kcq-patch-notes h1").textContent).toBe("Localized updates");
-        expect(element(".kcq-patch-notes h2").textContent).toBe("1.1.0 \u2014 Localized title");
-        expect(element(".kcq-patch-notes li").textContent).toBe("Nouveaux r?cits.");
+        const article = document.querySelectorAll(".kcq-patch-notes__release")[releaseHistory.releases.indexOf(release)]!;
+        expect(article.querySelector("h2")?.textContent).toBe(`${release.version} \u2014 Localized title`);
+        expect(article.querySelector("li")?.textContent).toBe("Nouveaux r?cits.");
         expect(element(".kcq-patch-notes button").textContent).toBe("Retour"); close();
         expect(element(".kcq-title-screen__patch-notes").textContent).toBe("Localized updates");
         const select = element<HTMLSelectElement>(".kcq-title-screen select");
@@ -248,7 +253,7 @@ describe("Patch Notes startup and navigation", () => {
 function expectSettingsSizing(): void {
     const host = document.createElement("div"); document.body.append(host);
     const dispose = render(() => createComponent(BattleSettingsPanel, {
-        presentation, release: "1.1.0", viewPreferences: createViewPreferences(), onResume: () => { },
+        presentation, release: testRelease, viewPreferences: createViewPreferences(), onResume: () => { },
     }), host);
     try {
         const settingsOverlay = element(".kcq-battle-settings__overlay");
@@ -284,9 +289,9 @@ describe("Patch Notes responsive presentation", () => {
         expectSettingsSizing();
         expect(getComputedStyle(element(".kcq-patch-notes__history")).overflowY).toBe("auto");
         expect(element(".kcq-patch-notes__history").querySelector("button")).toBeNull();
-        expect(document.querySelectorAll(".kcq-patch-notes__release")).toHaveLength(3); close();
+        expect(document.querySelectorAll(".kcq-patch-notes__release")).toHaveLength(releaseHistory.releases.length); close();
         expect(getComputedStyle(element(".kcq-title-screen__version")).flexWrap).toBe("wrap");
-        open(); expect(document.querySelectorAll(".kcq-patch-notes__release")).toHaveLength(3);
+        open(); expect(document.querySelectorAll(".kcq-patch-notes__release")).toHaveLength(releaseHistory.releases.length);
     });
 
     it.each([
