@@ -433,7 +433,7 @@ describe("Game Log bottom following", () => {
         expect(rows[1]!.querySelector(':scope > .kcq-game-log__values')!.textContent).toBe("HitSkunk Head 0 (None) → 10");
     });
 
-    it("starts at the bottom and follows new entries while at or near the bottom", () => {
+    it("follows new entries at the bottom and pauses even for small scrollback", () => {
         const log = mountScrollingLog();
         log.flush();
         expect(log.viewport.scrollTop).toBe(800);
@@ -443,7 +443,11 @@ describe("Game Log bottom following", () => {
         log.scroll(880);
         log.append();
         log.flush();
-        expect(log.viewport.scrollTop).toBe(1000);
+        expect(log.viewport.scrollTop).toBe(880);
+        log.scroll(1000);
+        log.append();
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(1100);
         expect(log.observe).toHaveBeenCalledTimes(2);
     });
 

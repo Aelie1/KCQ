@@ -198,3 +198,63 @@ describe("scroll ownership", () => {
         nextStory.dispatchEvent(new Event("scroll")); log.flush(); expect(game.scrollTop).toBe(300);
     });
 });
+
+describe("native incremental scrolling", () => {
+    it.each([0, 1])("lets small wheel steps leave the bottom of panel %i without rewriting the source", index => {
+        const log = mount(); const [game, story] = log.panels as [HTMLElement, HTMLElement];
+        geometry(game, [200, 400, 300, 300]); geometry(story, [400, 200, 400, 500]); log.flush();
+        const source = log.panels[index]!, target = log.panels[1 - index]!;
+        const initialTop = source.scrollTop, initialTarget = target.scrollTop;
+        const writes = vi.spyOn(source, "scrollTop", "set");
+        for (const distance of [8, 16, 24, 40]) {
+            const wheel = new WheelEvent("wheel", { deltaY: -8, bubbles: true, cancelable: true });
+            source.dispatchEvent(wheel); expect(wheel.defaultPrevented).toBe(false);
+            // happy-dom has no native wheel default; reproduce its incremental scroll event.
+            log.scroll(source, initialTop - distance); writes.mockClear();
+            log.flush();
+            expect(writes).not.toHaveBeenCalled();
+            expect(source.scrollTop).toBe(initialTop - distance);
+            expect(target.scrollTop).toBeLessThan(initialTarget);
+            target.dispatchEvent(new Event("scroll"));
+            expect(log.pending.size).toBe(0); // The synchronized echo must not reverse ownership.
+        }
+    });
+});
+
+describe("native source ownership near the bottom", () => {
+    it.each(["wheel", "touchmove", "keydown", "pointermove"])("leaves %s input uncanceled and does not write back to a scrolling source", input => {
+        const log = mount(); const [game, story] = log.panels as [HTMLElement, HTMLElement];
+        geometry(game, [200, 400, 300, 300]); geometry(story, [400, 200, 400, 500]); log.flush();
+        const event = input === "keydown" ? new KeyboardEvent(input, { key: "ArrowUp", bubbles: true, cancelable: true })
+            : new Event(input, { bubbles: true, cancelable: true });
+        game.dispatchEvent(event); expect(event.defaultPrevented).toBe(false);
+        // Fractional trackpad/native smooth-scroll steps can initially be less than a pixel.
+        log.scroll(game, 1099.25);
+        const writes = vi.spyOn(game, "scrollTop", "set"); log.flush();
+        expect(writes).not.toHaveBeenCalled(); expect(game.scrollTop).toBe(1099.25);
+        log.scroll(game, 1097); writes.mockClear(); log.flush();
+        expect(writes).not.toHaveBeenCalled(); expect(game.scrollTop).toBe(1097);
+        expect(story.scrollTop).toBeLessThan(1400);
+    });
+    it.each([0, 1])("pauses follow during a small scroll on panel %i even if combat updates before the next frame", index => {
+        const log = mount(); const [game, story] = log.panels as [HTMLElement, HTMLElement];
+        const a = geometry(game, [200, 400, 300, 300]), b = geometry(story, [400, 200, 400, 500]); log.flush();
+        const source = log.panels[index]!, top = source.scrollTop;
+        log.scroll(source, top - 8);
+        a.setHeights([200, 400, 300, 500]); b.setHeights([400, 200, 400, 800]);
+        log.setEntries([...history(), action()]); log.flush();
+        expect(source.scrollTop).toBe(top - 8);
+        const target = log.panels[1 - index]!; target.dispatchEvent(new Event("scroll"));
+        log.resize(); log.flush(); expect(source.scrollTop).toBe(top - 8);
+        log.scroll(source, index ? 1700 : 1300); log.flush();
+        expect(game.scrollTop).toBe(1300); expect(story.scrollTop).toBe(1700);
+    });
+    it("resumes both ends when the source has no visible entries in the final round", () => {
+        const log = mount(history([4])); const [game, story] = log.panels as [HTMLElement, HTMLElement];
+        geometry(game, [200, 400, 300, 300]); geometry(story, [400, 200, 400, 0]); log.flush();
+        log.scroll(story, 892); log.flush(); expect(game.scrollTop).toBeLessThan(1100);
+        log.scroll(story, 900);
+        const writes = vi.spyOn(story, "scrollTop", "set"); log.flush();
+        expect(writes).not.toHaveBeenCalled(); expect(game.scrollTop).toBe(1100); expect(story.scrollTop).toBe(900);
+    });
+});

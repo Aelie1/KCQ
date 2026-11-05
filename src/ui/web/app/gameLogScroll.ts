@@ -43,6 +43,7 @@ export function createGameLogScroll(synchronized: () => boolean) {
     let source: CompactLogStyle | undefined;
     let frame: number | undefined;
     let writing = false;
+    let followOnFrame = false;
 
     const write = (panel: LogViewport, top: number) => {
         const next = clamp(top, 0, maximum(panel));
@@ -87,7 +88,9 @@ export function createGameLogScroll(synchronized: () => boolean) {
         frame = requestAnimationFrame(() => {
             frame = undefined;
             if (following) {
-                for (const panel of panels.values()) write(panel, maximum(panel));
+                for (const [kind, panel] of panels) {
+                    if (followOnFrame || kind !== source) write(panel, maximum(panel));
+                }
             } else if (synchronized() && source) {
                 const from = panels.get(source);
                 const to = panels.get(source === "game" ? "story" : "game");
@@ -101,6 +104,9 @@ export function createGameLogScroll(synchronized: () => boolean) {
             if (reset) panel.expectedTop = undefined;
         }
         if (reset) { following = true; source = undefined; }
+        // Only content/layout updates may advance the source to the bottom.
+        // Doing so on a native scroll event interrupts small wheel/trackpad steps.
+        followOnFrame = true;
         schedule();
     };
     return {
@@ -118,8 +124,11 @@ export function createGameLogScroll(synchronized: () => boolean) {
                 if (Math.abs(top - panel.lastTop) <= EPSILON) return;
                 panel.expectedTop = undefined;
                 panel.lastTop = top;
-                following = maximum(panel) - top <= 32;
+                // Allow rounding at the bottom, but let small native scroll steps
+                // leave follow mode immediately instead of snapping them back.
+                following = maximum(panel) - top <= 1;
                 source = kind;
+                followOnFrame = false;
                 schedule();
             };
             viewport.addEventListener("scroll", scroll, { passive: true });
