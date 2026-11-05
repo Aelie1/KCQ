@@ -1781,11 +1781,11 @@ button {
     scrollbar-width: thin;
 }
 
-.kcq-full-game-log__viewport > .kcq-game-log__scroll {
+.kcq-full-game-log__viewport>.kcq-game-log__scroll {
     position: relative;
 }
 
-.kcq-full-game-log__viewport .kcq-game-log__scroll > * {
+.kcq-full-game-log__viewport .kcq-game-log__scroll>* {
     flex-shrink: 0;
 }
 
@@ -7023,38 +7023,38 @@ button {
 
 /* Compact settings for the wide portal layout. */
 /* Dialog sizing */
-:is(.kcq-battle-settings__overlay, .kcq-patch-notes__overlay)[data-kcq-layout="wide"] .kcq-battle-result__viewport {
+:is(.kcq-battle-settings__overlay, .kcq-patch-notes__overlay):is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result__viewport {
     width: 400px;
     max-width: 100%;
 }
 
-.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings,
-.kcq-patch-notes__overlay[data-kcq-layout="wide"] .kcq-patch-notes {
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings,
+.kcq-patch-notes__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-patch-notes {
     max-width: 380px;
     gap: 6px;
     padding: 16px;
 }
 
-.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__shortcut-hints span {
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__shortcut-hints span {
     max-width: 150px;
     line-height: 1.3;
 }
 
 /* Setting rows */
-.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__option {
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__option {
     min-height: 36px;
     padding: 2px 0;
     gap: 12px;
     font-size: 12px;
 }
 
-.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__option span {
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__option span {
     width: auto;
     flex: 1 1 auto;
 }
 
 /* Dropdowns */
-.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__option select {
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__option select {
     flex: 0 0 auto;
     width: 175px;
     max-width: 48%;
@@ -7064,30 +7064,30 @@ button {
 }
 
 /* Sliders */
-.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__log-lines input {
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__log-lines input {
     flex: 0 0 170px;
     min-height: 32px;
 }
 
 /* Compact buttons */
-.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings .kcq-battle-result__actions button,
-.kcq-patch-notes__overlay[data-kcq-layout="wide"] .kcq-patch-notes .kcq-battle-result__actions button {
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings .kcq-battle-result__actions button,
+.kcq-patch-notes__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-patch-notes .kcq-battle-result__actions button {
     min-height: 36px;
     padding: 6px 10px;
     font-size: 12px;
 }
 
 /* Reset button */
-.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__reset {
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__reset {
     margin-top: 8px;
 }
 
-.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__reset button {
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings__reset button {
     width: 100%;
 }
 
 /* Battle navigation buttons */
-.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings>.kcq-battle-result__actions:last-child {
+.kcq-battle-settings__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-settings>.kcq-battle-result__actions:last-child {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
 }
