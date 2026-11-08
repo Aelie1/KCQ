@@ -1,5 +1,9 @@
 # Ko-chan's Quest Patch Notes
 
+## 1.2.2 — 2026-11-08
+
+* Updated dependencies to resolve vunerability audit
+
 ## 1.2.1 — 2026-11-05
 
 ### Game Log Improvements

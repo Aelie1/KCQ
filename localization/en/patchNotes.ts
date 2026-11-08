@@ -19,4 +19,6 @@ export const patchNotesEnglishStrings: StringTable = {
     "ui.patchNotes.1.2.1.line1": "Game Log can now show both story and game logs at once in any full screen mode.",
     "ui.patchNotes.1.2.1.line2": "Compact logs can choose between story and game logs in settings.",
     "ui.patchNotes.1.2.1.line3": "Settings panel is now two columns for medium and wide screens.",
+    "ui.patchNotes.1.2.2.title": "Dependency Updates",
+    "ui.patchNotes.1.2.2.line1": "Updated dependency versions.",
 };

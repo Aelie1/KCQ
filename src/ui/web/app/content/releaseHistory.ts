@@ -16,6 +16,11 @@ export interface ReleaseHistory {
 export const releaseHistory: ReleaseHistory = {
     releases: [
         {
+            version: "1.2.2",
+            titleKey: "patchNotes.1.2.2.title",
+            sections: [{ bulletKeys: ["patchNotes.1.2.2.line1"] }],
+        },
+        {
             version: "1.2.1",
             titleKey: "patchNotes.1.2.1.title",
             sections: [{ bulletKeys: ["patchNotes.1.2.1.line1", "patchNotes.1.2.1.line2", "patchNotes.1.2.1.line3"] }],
