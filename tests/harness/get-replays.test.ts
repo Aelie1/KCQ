@@ -144,6 +144,101 @@ describe("PostHog replay API", () => {
 });
 
 describe("PostHog replay archive sync", () => {
+    it("keeps only scalar metadata in the index for existing, added, and updated archives", async () => {
+        const directory = await temporaryDirectory();
+        const completeRows = makeReplayRows("complete", {
+            actions: [{ type: "endTurn" }, { type: "endTurn" }], terminal: "quit",
+        });
+        const updateRows = makeReplayRows("update", {
+            actions: [{ type: "endTurn" }, { type: "endTurn" }], terminal: "quit",
+        });
+        const newRows = makeReplayRows("new", {
+            actions: [{ type: "endTurn" }, { type: "endTurn" }], terminal: "quit",
+        });
+        const completeFilename = await writeArchivedReplay(directory, makeArchive("complete", completeRows));
+        const updateFilename = await writeArchivedReplay(directory, makeArchive("update", makeReplayRows("update")));
+        const completePath = join(directory, completeFilename);
+        const originalComplete = await readFile(completePath, "utf8");
+        const originalMtime = (await stat(completePath)).mtimeMs;
+        const client = new FakeClient([metadata("complete"), metadata("update"), metadata("new")], new Map([
+            ["complete", completeRows], ["update", updateRows], ["new", newRows],
+        ]));
+
+        // Observe the actual index writes without keeping archives alive through
+        // GC-sensitive timing assertions or generating a large replay corpus.
+        const indexWrites = vi.spyOn(Map.prototype, "set");
+        let entries: Array<[string, Record<string, unknown>]>;
+        try {
+            const result = await syncPostHogReplays({ client, replaysDirectory: directory });
+            entries = indexWrites.mock.calls.filter(([key, value]) =>
+                ["complete", "update", "new"].includes(key)
+                && value?.path?.startsWith(directory));
+            expect(result).toMatchObject({
+                completeArchives: 1, provisionalArchives: 1, newFights: 1, unchanged: 1, failed: [],
+            });
+            expect(result.updated).toEqual([expect.objectContaining({
+                replayId: "update", filename: updateFilename, previousActionCount: 0, actionCount: 2,
+            })]);
+            expect(result.added).toEqual([expect.objectContaining({ replayId: "new" })]);
+        } finally {
+            indexWrites.mockRestore();
+        }
+
+        expect(entries.map(([id]) => id).sort()).toEqual(["complete", "new", "update", "update"]);
+        for (const [, entry] of entries) {
+            expect(Object.keys(entry).sort()).toEqual(["actionCount", "canSkip", "filename", "path", "terminal"]);
+            expect(Object.values(entry).every((value) => value === undefined
+                || ["string", "number", "boolean"].includes(typeof value))).toBe(true);
+        }
+        expect(client.fetched).toEqual(["update", "new"]);
+        expect(await readFile(completePath, "utf8")).toBe(originalComplete);
+        expect((await stat(completePath)).mtimeMs).toBe(originalMtime);
+
+        client.fetched.length = 0;
+        const resumed = await syncPostHogReplays({ client, replaysDirectory: directory });
+        expect(resumed).toMatchObject({ unchanged: 3, added: [], updated: [], failed: [] });
+        expect(client.fetched).toEqual([]);
+    });
+
+    it("reloads an existing archive only for comparison and leaves identical contents untouched", async () => {
+        const directory = await temporaryDirectory();
+        const replayId = "compare-on-demand";
+        const filename = await writeArchivedReplay(directory, makeArchive(replayId, makeReplayRows(replayId)));
+        const rows = makeReplayRows(replayId, {
+            actions: [{ type: "endTurn" }, { type: "endTurn" }], terminal: "quit",
+        });
+        const currentContents = JSON.stringify(makeArchive(replayId, rows));
+        const client = new FakeClient([metadata(replayId)], new Map([[replayId, rows]]));
+        const discover = client.discoverReplays.bind(client);
+        client.discoverReplays = async () => {
+            // Discovery has finished: comparison must read the file on demand,
+            // rather than use the full provisional object read during indexing.
+            await writeFile(join(directory, filename), currentContents);
+            return discover();
+        };
+
+        const result = await syncPostHogReplays({ client, replaysDirectory: directory });
+
+        expect(result).toMatchObject({ unchanged: 1, added: [], updated: [], failed: [] });
+        expect(result.unchangedProvisional).toEqual([expect.objectContaining({ replayId, actionCount: 2 })]);
+        expect(client.fetched).toEqual([replayId]);
+        expect(await readFile(join(directory, filename), "utf8")).toBe(currentContents);
+    });
+
+    it.each([
+        ["malformed JSON", "{", "Invalid replay archive invalid.json"],
+        ["invalid format", JSON.stringify({ format: 2 }), "expected a format 1 ArchivedReplay"],
+    ])("still rejects %s during discovery without changing the file", async (_name, contents, message) => {
+        const directory = await temporaryDirectory();
+        const path = join(directory, "invalid.json");
+        await writeFile(path, contents);
+        const client = new FakeClient([], new Map());
+
+        await expect(syncPostHogReplays({ client, replaysDirectory: directory })).rejects.toThrow(message);
+        expect(client.discoveries).toBe(0);
+        expect(await readFile(path, "utf8")).toBe(contents);
+    });
+
     it("compares releases using semantic-version precedence", () => {
         expect(compareSemanticVersions("0.10.0", "0.9.9")).toBeGreaterThan(0);
         expect(compareSemanticVersions("0.8.1-beta.2", "0.8.1-beta.10")).toBeLessThan(0);

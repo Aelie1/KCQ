@@ -121,7 +121,21 @@ export const MIN_ARCHIVED_REPLAY_ROUNDS = 3;
 interface ArchiveEntry {
     filename: string;
     path: string;
-    archive: ArchivedReplay;
+    terminal?: ArchivedReplayTerminal;
+    canSkip: boolean;
+    actionCount: number;
+}
+
+// Never put replay histories or step telemetry in the long-lived index.
+function archiveEntry(filename: string, path: string, archive: ArchivedReplay): ArchiveEntry {
+    return {
+        filename,
+        path,
+        terminal: archive.terminal,
+        canSkip: Boolean(archive.terminal
+            && (archive.timingUnavailable || hasCompleteArchiveMetadata(archive))),
+        actionCount: archive.replay.steps.length,
+    };
 }
 
 export async function syncPostHogReplays(
@@ -159,13 +173,12 @@ export async function syncPostHogReplays(
                 continue;
             }
             if (existing) {
-                if (existing.archive.terminal) completeArchives += 1;
+                if (existing.terminal) completeArchives += 1;
                 else provisionalArchives += 1;
             } else {
                 newFights += 1;
             }
-            if (existing?.archive.terminal
-                && (existing.archive.timingUnavailable || hasCompleteArchiveMetadata(existing.archive))) {
+            if (existing?.canSkip) {
                 skippedCompleteArchives += 1;
                 continue;
             }
@@ -198,17 +211,18 @@ export async function syncPostHogReplays(
             if (!existing) {
                 const filename = await writeArchivedReplay(options.replaysDirectory, archive);
                 added.push({ ...summary, filename });
-                archived.set(metadata.replayId, {
-                    filename,
-                    path: join(options.replaysDirectory, filename),
-                    archive,
-                });
-            } else if (archivesEqual(existing.archive, archive)) {
+                archived.set(metadata.replayId, archiveEntry(
+                    filename, join(options.replaysDirectory, filename), archive,
+                ));
+            } else if (archivesEqual(
+                parseArchive(await readArchiveValue(existing.path, existing.filename), existing.filename),
+                archive,
+            )) {
                 unchangedProvisional.push(summarizeUnchanged(archive));
             } else {
-                const previousActionCount = existing.archive.replay.steps.length;
+                const previousActionCount = existing.actionCount;
                 await replaceArchivedReplay(existing.path, archive);
-                existing.archive = archive;
+                archived.set(metadata.replayId, archiveEntry(existing.filename, existing.path, archive));
                 updated.push({
                     ...summary,
                     filename: existing.filename,
@@ -320,33 +334,50 @@ async function readArchivedReplays(
     for (const entry of entries) {
         if (!entry.isFile() || !entry.name.toLowerCase().endsWith(".json")) continue;
         const path = join(directory, entry.name);
-        let value: unknown;
-        try {
-            value = JSON.parse(await readFile(path, "utf8"));
-        } catch (error: unknown) {
-            throw new Error(`Invalid replay archive ${entry.name}: ${errorMessage(error)}.`);
+        const indexed = await readArchiveEntry(path, entry.name, minimumRelease);
+        if (!indexed) {
+            pruned += 1;
+            continue;
         }
-        if (minimumRelease !== undefined && isRecord(value)
-            && typeof value.release === "string") {
-            let comparison: number;
-            try {
-                comparison = compareSemanticVersions(value.release, minimumRelease);
-            } catch (error: unknown) {
-                throw new Error(`Invalid replay archive ${entry.name}: ${errorMessage(error)}`);
-            }
-            if (comparison < 0) {
-                await unlink(path);
-                pruned += 1;
-                continue;
-            }
+        if (archives.has(indexed.replayId)) {
+            throw new Error(`Duplicate replayId ${indexed.replayId} in replay archives.`);
         }
-        const archive = parseArchive(value, entry.name);
-        if (archives.has(archive.replayId)) {
-            throw new Error(`Duplicate replayId ${archive.replayId} in replay archives.`);
-        }
-        archives.set(archive.replayId, { filename: entry.name, path, archive });
+        archives.set(indexed.replayId, indexed.entry);
     }
     return { archives, pruned };
+}
+
+async function readArchiveValue(path: string, filename: string): Promise<unknown> {
+    try {
+        return JSON.parse(await readFile(path, "utf8"));
+    } catch (error: unknown) {
+        throw new Error(`Invalid replay archive ${filename}: ${errorMessage(error)}.`);
+    }
+}
+
+// Keep the parsed archive local to this call so discovery releases each history
+// before reading the next file. Validation and legacy pruning stay unchanged.
+async function readArchiveEntry(
+    path: string,
+    filename: string,
+    minimumRelease?: string,
+): Promise<{ replayId: string; entry: ArchiveEntry } | undefined> {
+    const value = await readArchiveValue(path, filename);
+    if (minimumRelease !== undefined && isRecord(value)
+        && typeof value.release === "string") {
+        let comparison: number;
+        try {
+            comparison = compareSemanticVersions(value.release, minimumRelease);
+        } catch (error: unknown) {
+            throw new Error(`Invalid replay archive ${filename}: ${errorMessage(error)}`);
+        }
+        if (comparison < 0) {
+            await unlink(path);
+            return undefined;
+        }
+    }
+    const archive = parseArchive(value, filename);
+    return { replayId: archive.replayId, entry: archiveEntry(filename, path, archive) };
 }
 
 function parseArchive(value: unknown, filename: string): ArchivedReplay {
