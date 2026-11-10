@@ -13,6 +13,7 @@ export type TelemetryEvent =
     | "battle_abandoned";
 
 export interface TelemetryCaptureOptions {
+    timestamp?: Date;
     send_instantly?: boolean;
     transport?: "sendBeacon";
 }
@@ -84,7 +85,8 @@ export function createGameplayTelemetry(
             enabled: true,
             capture: (event, properties, options) => {
                 try {
-                    sink.capture(event, properties, options);
+                    // Pin the event to capture time before SDK batching or delivery.
+                    sink.capture(event, properties, { timestamp: new Date(), ...options });
                 } catch {
                     // Telemetry delivery must never affect gameplay.
                 }

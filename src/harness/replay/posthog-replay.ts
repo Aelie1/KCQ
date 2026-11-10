@@ -13,7 +13,7 @@ import {
     type CompactStateDigest,
 } from "../../ui/web/telemetry";
 import type { FightReplay, ReplayStep } from "../harness";
-import { timestampMilliseconds } from "./replay-timestamp";
+import { normalizeActionTimestamps, timestampMilliseconds } from "./replay-timestamp";
 
 export const POSTHOG_REPLAY_COLUMNS = [
     "timestamp",
@@ -146,6 +146,27 @@ export function parsePostHogReplayEvents(
     })), "PostHog API results");
 }
 
+/** Normalize before crossing into tagged parsers that still enforce strict timing. */
+export function normalizePostHogReplayTimestamps(
+    rows: readonly PostHogReplayEventRow[],
+): PostHogReplayEventRow[] {
+    // Keep all existing structural validation, including sequence gaps and malformed dates.
+    const parsed = parsePostHogReplayEvents(rows);
+    const actions = rows.filter((row) => row.event === "battle_action"
+        && row.replay_id.trim() === parsed.replayId).map((row) => ({
+        row,
+        sequence: Number(row.sequence),
+        timestamp: row.timestamp,
+    }));
+    const normalized = normalizeActionTimestamps(
+        actions, parsed.startedAt, parsed.terminal?.timestamp, parsed.replayId,
+    );
+    const timestamps = new Map(normalized.map(({ row, timestamp }) => [row, timestamp]));
+    return rows.map((row) => timestamps.has(row)
+        ? { ...row, timestamp: timestamps.get(row)! }
+        : { ...row });
+}
+
 function parseReplayRecords(
     records: readonly ReplayRecord[],
     source: string,
@@ -235,8 +256,22 @@ function parseReplayRecords(
         })
         .sort((left, right) => left.sequence - right.sequence);
 
+    const terminalRecords = replayRecords.filter((record) =>
+        record.values.event === "battle_finished"
+        || record.values.event === "battle_quit"
+        || record.values.event === "battle_abandoned");
+    if (terminalRecords.length > 1) {
+        throw replayError(replayId,
+            `expected at most one terminal event row; found ${terminalRecords.length}`);
+    }
+    const terminal = terminalRecords[0]
+        ? parseTerminal(terminalRecords[0], replayId)
+        : undefined;
+
     const actionCandidates: ParsedPostHogAction[][] = [];
-    for (const action of actionRecords) {
+    for (const action of normalizeActionTimestamps(
+        actionRecords, startedAt, terminal?.timestamp, replayId,
+    )) {
         const candidates = actionCandidates.at(-1);
         if (!candidates || candidates[0].sequence !== action.sequence) {
             actionCandidates.push([action]);
@@ -252,18 +287,6 @@ function parseReplayRecords(
         }
     }
     const actions = actionCandidates.map((candidates) => candidates[0]);
-
-    const terminalRecords = replayRecords.filter((record) =>
-        record.values.event === "battle_finished"
-        || record.values.event === "battle_quit"
-        || record.values.event === "battle_abandoned");
-    if (terminalRecords.length > 1) {
-        throw replayError(replayId,
-            `expected at most one terminal event row; found ${terminalRecords.length}`);
-    }
-    const terminal = terminalRecords[0]
-        ? parseTerminal(terminalRecords[0], replayId)
-        : undefined;
 
     return {
         replayId,

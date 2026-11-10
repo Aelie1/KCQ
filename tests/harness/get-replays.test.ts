@@ -547,6 +547,45 @@ describe("PostHog replay archive sync", () => {
         expect(result.added[0]).toMatchObject({ elapsedMs: 420_000, afkMs: 180_000 });
     });
 
+    it("archives normalized sequence timing and derives elapsed/AFK from the same timestamps", async () => {
+        const directory = await temporaryDirectory();
+        const replayId = "normalized-afk-replay";
+        const rows = makeReplayRows(replayId, {
+            actions: Array.from({ length: 5 }, () => ({ type: "endTurn" })),
+            terminal: "quit",
+        });
+        const timestamps = [
+            "2026-09-21T11:59:59.000Z", // Clamp to start.
+            "2026-09-21T12:01:00.000Z",
+            "2026-09-21T12:06:00.000Z", // Three minutes AFK.
+            "2026-09-21T12:03:00.000Z", // Clamp to sequence 3; no second AFK gap.
+            "2026-09-21T12:20:00.000Z", // Clamp to terminal; two minutes AFK.
+        ];
+        rows.filter((row) => row.event === "battle_action").forEach((row, index) => {
+            row.timestamp = timestamps[index];
+        });
+        rows.at(-1)!.timestamp = "2026-09-21T12:10:00.000Z";
+        const client = new FakeClient([metadata(replayId)], new Map([[replayId, rows]]));
+        const result = await syncPostHogReplays({ client, replaysDirectory: directory });
+        expect(result.failed).toEqual([]);
+        const [archive] = await readArchives(directory);
+        expect(archive.stepTelemetry?.map((step) => step.timestamp)).toEqual([
+            "2026-09-21T12:00:00.000Z",
+            "2026-09-21T12:01:00.000Z",
+            "2026-09-21T12:06:00.000Z",
+            "2026-09-21T12:06:00.000Z",
+            "2026-09-21T12:10:00.000Z",
+        ]);
+        expect(archive).toMatchObject({
+            totalElapsedTime: "5m00s (+5m00s afk)", totalAfkTime: "5m00s",
+        });
+        expect(result.added[0]).toMatchObject({ elapsedMs: 300_000, afkMs: 300_000 });
+        // Reading and syncing the completed archive still accepts its timing summary.
+        const second = await syncPostHogReplays({ client, replaysDirectory: directory });
+        expect(second.failed).toEqual([]);
+        expect(second.unchanged).toBe(1);
+    });
+
     it("skips a completed archive that already contains aligned timing metadata", async () => {
         const directory = await temporaryDirectory();
         const replayId = "timed-complete";

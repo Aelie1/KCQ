@@ -6,8 +6,11 @@ import { runSingleFight } from "../../src/harness/harness";
 import { basicPolicy } from "../../src/harness/policy/basic";
 import {
     importPostHogReplayCsv,
+    normalizePostHogReplayTimestamps,
     parseCsv,
     parsePostHogReplayCsv,
+    parsePostHogReplayEvents,
+    reconstructFightReplay,
 } from "../../src/harness/replay/posthog-replay";
 import { compactStateDigest } from "../../src/ui/web/telemetry";
 
@@ -288,31 +291,76 @@ describe("PostHog CSV replay import", () => {
         expect(imported.stepTelemetry).toHaveLength(imported.replay.steps.length);
     });
 
-    it("rejects malformed and out-of-order wall-clock timestamps", () => {
-        const malformed = makeFixture();
-        actionRow(malformed.rows, 1).timestamp = "not-a-timestamp";
-        expect(() => importPostHogReplayCsv(toCsv(malformed.rows)))
-            .toThrow(/invalid timestamp "not-a-timestamp"/u);
+    it.each([
+        ["not-a-timestamp", /invalid timestamp/u],
+        ["2026-02-30T12:00:00Z", /invalid timestamp/u],
+        ["2026-09-21T25:00:00Z", /invalid timestamp/u],
+        ["", /missing timestamp/u],
+    ])("rejects malformed action timestamps: %s", (timestamp, error) => {
+        const fixture = makeFixture();
+        actionRow(fixture.rows, 2).timestamp = timestamp;
+        expect(() => importPostHogReplayCsv(toCsv(fixture.rows))).toThrow(error);
+        expect(() => normalizePostHogReplayTimestamps(fixture.rows)).toThrow(error);
+    });
 
-        const beforeStart = makeFixture();
-        actionRow(beforeStart.rows, 1).timestamp = "2026-09-21 11:59:59+00:00";
-        expect(() => importPostHogReplayCsv(toCsv(beforeStart.rows)))
-            .toThrow("action timestamp at sequence 1 precedes battle start");
-
-        const decreasing = makeFixture();
-        actionRow(decreasing.rows, 2).timestamp = "2026-09-21 12:00:00.500+00:00";
-        expect(() => importPostHogReplayCsv(toCsv(decreasing.rows)))
-            .toThrow("action timestamp at sequence 2 precedes the previous action");
-
+    it("rejects a terminal timestamp before battle start", () => {
         const terminalBeforeStart = makeFixture();
         terminalBeforeStart.rows.at(-1)!.timestamp = "2026-09-21 11:59:59+00:00";
         expect(() => importPostHogReplayCsv(toCsv(terminalBeforeStart.rows)))
             .toThrow("terminal timestamp precedes battle start");
+    });
 
-        const afterTerminal = makeFixture();
-        afterTerminal.rows.at(-1)!.timestamp = "2026-09-21 12:00:01.500+00:00";
-        expect(() => importPostHogReplayCsv(toCsv(afterTerminal.rows)))
-            .toThrow("action timestamp at sequence 2 occurs after the terminal event");
+    it.each([
+        { timestamp: "2026-09-21 11:59:59+00:00", expected: "2026-09-21 12:00:00+00:00", sequence: 1 },
+        { timestamp: "2026-09-21 12:00:00.500+00:00", expected: "2026-09-21 12:00:01+00:00", sequence: 2 },
+        { timestamp: "2026-09-21 12:00:01+00:00", expected: "2026-09-21 12:00:01+00:00", sequence: 2 },
+        { timestamp: "2026-09-21 14:00:00+00:00", expected: "2026-09-21 13:00:00+00:00", sequence: 1 },
+    ])("normalizes action $sequence at $timestamp for CSV and API imports", ({ timestamp, expected, sequence }) => {
+        const fixture = makeFixture();
+        actionRow(fixture.rows, sequence).timestamp = timestamp;
+        const imported = importPostHogReplayCsv(toCsv(fixture.rows));
+        expect(imported.stepTelemetry[sequence - 1].timestamp).toBe(expected);
+        expect(imported.replay.steps.map((step) => step.action)).toEqual(fixture.actions);
+        expect(reconstructFightReplay(parsePostHogReplayEvents(fixture.rows))).toEqual(imported);
+        if (sequence === 1 && timestamp.includes("14:00")) {
+            expect(imported.stepTelemetry[1].timestamp).toBe(expected);
+        }
+    });
+
+    it("repairs sequence 4 before sequence 3 without changing input rows or gameplay", () => {
+        const fixture = makeFixture({ actions: Array.from({ length: 4 }, () => ({
+            source: "player", action: { type: "endTurn" },
+        })) });
+        actionRow(fixture.rows, 4).timestamp = "2026-09-21 12:00:02.500+00:00";
+        fixture.rows.reverse();
+        const original = structuredClone(fixture.rows);
+        const normalized = normalizePostHogReplayTimestamps(fixture.rows);
+        expect(fixture.rows).toEqual(original);
+        expect(normalized).toEqual(original.map((row) => Number(row.sequence) === 4
+            ? { ...row, timestamp: actionRow(original, 3).timestamp } : row));
+        expect(normalizePostHogReplayTimestamps(normalized)).toEqual(normalized);
+        const imported = reconstructFightReplay(parsePostHogReplayEvents(normalized));
+        expect(imported.replay.steps.map((step) => step.action)).toEqual(fixture.actions);
+        expect(imported.stepTelemetry[3].timestamp).toBe(imported.stepTelemetry[2].timestamp);
+    });
+
+    it("normalizes incomplete replays without inventing a terminal bound", () => {
+        const fixture = makeFixture({ terminal: null });
+        actionRow(fixture.rows, 2).timestamp = fixture.rows[0].timestamp;
+        const imported = importPostHogReplayCsv(toCsv(fixture.rows));
+        expect(imported.stepTelemetry[1].timestamp).toBe(imported.stepTelemetry[0].timestamp);
+        expect(imported.endedAt).toBeUndefined();
+    });
+
+    it("still rejects missing actions and combat divergence with inconsistent timestamps", () => {
+        const fixture = makeFixture();
+        actionRow(fixture.rows, 2).timestamp = fixture.rows[0].timestamp;
+        const missing = fixture.rows.filter((row) => Number(row.sequence) !== 1);
+        expect(() => normalizePostHogReplayTimestamps(missing)).toThrow("missing action sequence 1");
+        const state = JSON.parse(actionRow(fixture.rows, 2).state_after);
+        state.turn.round = 999;
+        actionRow(fixture.rows, 2).state_after = JSON.stringify(state);
+        expect(() => importPostHogReplayCsv(toCsv(fixture.rows))).toThrow(/state_after diverged/u);
     });
 
     it("parses and validates battle_abandoned with an ongoing outcome", () => {

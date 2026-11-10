@@ -156,6 +156,37 @@ describe("browser gameplay telemetry", () => {
         expect(() => failingTelemetry.capture("battle_quit", {})).not.toThrow();
     });
 
+    it("pins SDK timestamps at capture time and preserves abandonment transport options", () => {
+        vi.useFakeTimers();
+        try {
+            const capture = vi.fn();
+            const telemetry = createGameplayTelemetry({
+                projectToken: "project-token", apiHost: "https://example.test",
+            }, () => ({ capture }));
+            const first = new Date("2026-09-21T12:00:00.000Z");
+            vi.setSystemTime(first);
+            telemetry.capture("battle_started", { replay_id: "capture-time" });
+            vi.setSystemTime(new Date(first.getTime() + 1_000));
+            telemetry.capture("battle_action", { sequence: 1 });
+            telemetry.capture("battle_abandoned", {}, {
+                send_instantly: true, transport: "sendBeacon",
+            });
+            expect(capture.mock.calls).toEqual([
+                ["battle_started", { replay_id: "capture-time" }, { timestamp: first }],
+                ["battle_action", { sequence: 1 }, { timestamp: new Date(first.getTime() + 1_000) }],
+                ["battle_abandoned", {}, {
+                    timestamp: new Date(first.getTime() + 1_000),
+                    send_instantly: true, transport: "sendBeacon",
+                }],
+            ]);
+            const payload = postHogPayload("battle_action", { replay_id: "capture-time" });
+            payload.timestamp = capture.mock.calls[1][2].timestamp;
+            expect(sanitizePostHogEvent(payload, PLAYER_ID)?.timestamp).toEqual(payload.timestamp);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it("reports pagehide abandonment once with current state using sendBeacon", () => {
         const engine = createStockEngine(8224);
         engine.loadCharacter(ko.id);

@@ -5,6 +5,7 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import {
     enrichImportedReplayTelemetry,
+    normalizePostHogReplayTimestamps,
     parsePostHogReplayEvents,
     type ImportedPostHogReplay,
     type PostHogReplayEventRow,
@@ -32,11 +33,12 @@ export class ReleaseReplayRuntime {
         rows: readonly PostHogReplayEventRow[],
         release: string,
     ): Promise<ImportedPostHogReplay> {
+        const normalizedRows = normalizePostHogReplayTimestamps(rows);
         const runtime = await this.#runtime(release);
         const runner = join(this.#root, "src", "harness", "replay", "release-replay-runner.cjs");
         let output: string;
         try {
-            output = await runProcess(process.execPath, [runner, runtime, release], this.#root, JSON.stringify(rows));
+            output = await runProcess(process.execPath, [runner, runtime, release], this.#root, JSON.stringify(normalizedRows));
         } catch (error) {
             throw new Error(`Replay runtime ${release}: ${errorMessage(error)}`);
         }
@@ -49,7 +51,7 @@ export class ReleaseReplayRuntime {
         if (!isImportedReplay(imported) || imported.release !== release) {
             throw new Error(`Replay runtime ${release} returned an invalid or mismatched replay.`);
         }
-        return enrichImportedReplayTelemetry(imported, parsePostHogReplayEvents(rows));
+        return enrichImportedReplayTelemetry(imported, parsePostHogReplayEvents(normalizedRows));
     }
 
     async #runtime(release: string): Promise<string> {

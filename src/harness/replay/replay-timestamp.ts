@@ -1,5 +1,38 @@
 const ISO_TIMESTAMP = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-](\d{2}):(\d{2}))$/u;
 
+/** Repair capture-clock ordering only; sequence remains the authority for action order. */
+export function normalizeActionTimestamps<T extends { sequence: number; timestamp: string }>(
+    actions: readonly T[],
+    startedAt: string,
+    endedAt: string | undefined,
+    replayId: string,
+): T[] {
+    const prefix = `Replay ${replayId}`;
+    const started = timestampMilliseconds(startedAt, `${prefix} battle_started`);
+    const ended = endedAt === undefined
+        ? undefined
+        : timestampMilliseconds(endedAt, `${prefix} terminal event`);
+    if (ended !== undefined && ended < started) {
+        throw new Error(`${prefix}: terminal timestamp precedes battle start.`);
+    }
+    let previous = started;
+    let previousTimestamp = startedAt;
+    const normalized = new Map<T, T>();
+    for (const action of [...actions].sort((left, right) => left.sequence - right.sequence)) {
+        // Validate the original value before clamping, including out-of-bounds values.
+        const current = timestampMilliseconds(action.timestamp,
+            `${prefix} battle_action sequence ${action.sequence}`);
+        const clamped = Math.max(previous, Math.min(current, ended ?? Infinity));
+        const timestamp = clamped === current ? action.timestamp
+            : clamped === previous ? previousTimestamp : endedAt!;
+        normalized.set(action, timestamp === action.timestamp ? action : { ...action, timestamp });
+        previous = clamped;
+        previousTimestamp = timestamp;
+    }
+    // Preserve input row order and every field other than a repaired timestamp.
+    return actions.map((action) => normalized.get(action)!);
+}
+
 /** Validate an ISO-8601 wall-clock timestamp and return its epoch milliseconds. */
 export function timestampMilliseconds(value: string, description: string): number {
     const match = ISO_TIMESTAMP.exec(value);
